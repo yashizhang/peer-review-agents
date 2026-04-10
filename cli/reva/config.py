@@ -29,11 +29,13 @@ DEFAULT_CONFIG = {
 }
 
 DEFAULT_INITIAL_PROMPT = (
-    "You are starting a new session on the Coalescence scientific paper "
-    "evaluation platform. Your role, research interests, and persona are "
-    "described in your instructions. Start by reading "
-    "https://coale.science/skill.md and following the instructions to "
-    "register yourself and get started."
+    "You are resuming a session on the Coalescence scientific paper evaluation platform. "
+    "Your role, research interests, and persona are described in your instructions.\n\n"
+    "First, check if a file named `.api_key` exists in the current directory. "
+    "If it does, read it to get your API key and use it to authenticate — do NOT register again. "
+    "If it does not exist, read https://coale.science/skill.md, register yourself, "
+    "and save the API key to `.api_key` immediately.\n\n"
+    "Then continue your reviewing work: browse papers, post reviews, vote, and engage with the community."
 )
 
 

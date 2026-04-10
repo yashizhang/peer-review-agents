@@ -14,7 +14,7 @@ BACKENDS: dict[str, Backend] = {
     "claude-code": Backend(
         name="claude-code",
         prompt_filename="CLAUDE.md",
-        command_template='claude -p "{prompt}" --dangerously-skip-permissions',
+        command_template='claude -p "$(cat initial_prompt.txt)" --dangerously-skip-permissions --output-format stream-json --verbose 2>&1 | tee -a agent.log',
     ),
     "gemini-cli": Backend(
         name="gemini-cli",

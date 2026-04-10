@@ -3,6 +3,8 @@
 import glob
 import json
 import shutil
+import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -551,6 +553,155 @@ def debug(ctx, count, strategy, seed):
         click.echo(prompt)
 
     click.echo(separator)
+
+
+# --------------------------------------------------------------------------- #
+# reva watch
+# --------------------------------------------------------------------------- #
+
+
+@main.command()
+@click.argument("name", required=False)
+@click.option("--all", "watch_all", is_flag=True, help="Watch all running agents (interleaved).")
+@click.pass_context
+def watch(ctx, name, watch_all):
+    """Stream a readable live view of agent activity from agent.log."""
+    cfg = _get_config(ctx)
+
+    if watch_all:
+        agents = sorted(d for d in cfg.agents_dir.iterdir() if d.is_dir() and (d / "agent.log").exists())
+        if not agents:
+            raise click.ClickException("No agent logs found.")
+        log_files = [(a.name, a / "agent.log") for a in agents]
+    elif name:
+        agent_dir = cfg.agents_dir / name
+        log_file = agent_dir / "agent.log"
+        if not log_file.exists():
+            raise click.ClickException(f"No agent.log found for: {name}")
+        log_files = [(name, log_file)]
+    else:
+        # pick most recently modified agent log
+        agents = sorted(
+            (d for d in cfg.agents_dir.iterdir() if d.is_dir() and (d / "agent.log").exists()),
+            key=lambda d: (d / "agent.log").stat().st_mtime,
+            reverse=True,
+        )
+        if not agents:
+            raise click.ClickException("No agent logs found.")
+        log_files = [(agents[0].name, agents[0] / "agent.log")]
+        click.echo(f"Watching: {agents[0].name}\n")
+
+    handles = {name: open(path, "r") for name, path in log_files}
+    # seek to end so we only show new lines (unless file is small)
+    for name_, fh in handles.items():
+        fh.seek(0)
+
+    prefix = len(log_files) > 1
+
+    try:
+        while True:
+            activity = False
+            for agent_name, fh in handles.items():
+                line = fh.readline()
+                if not line:
+                    continue
+                activity = True
+                _render_log_line(line.strip(), agent_name if prefix else None)
+            if not activity:
+                time.sleep(0.2)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        for fh in handles.values():
+            fh.close()
+
+
+def _wrap(text: str, width: int = 100, indent: str = "  ") -> str:
+    """Wrap text to width, indenting continuation lines."""
+    import textwrap
+    lines = text.splitlines()
+    wrapped = []
+    for line in lines:
+        wrapped.extend(textwrap.wrap(line, width, subsequent_indent=indent) or [""])
+    return "\n".join(wrapped)
+
+
+def _render_log_line(line: str, agent_name: str | None):
+    """Parse one stream-json line and print a human-readable summary."""
+    if not line:
+        return
+    try:
+        d = json.loads(line)
+    except json.JSONDecodeError:
+        click.echo(line)
+        return
+
+    tag = f"[{agent_name[:28]}] " if agent_name else ""
+    typ = d.get("type")
+
+    if typ == "system" and d.get("subtype") == "init":
+        model = d.get("model", "?")
+        click.echo(click.style(f"\n{tag}▶ session started  model={model}", fg="green", bold=True))
+
+    elif typ == "assistant":
+        for block in d.get("message", {}).get("content", []):
+            btype = block.get("type")
+
+            if btype == "thinking":
+                thought = block.get("thinking", "").strip()
+                if thought:
+                    click.echo(click.style(f"\n{tag}thinking:", fg="bright_black", bold=True))
+                    click.echo(click.style(_wrap(thought, indent="  "), fg="bright_black"))
+
+            elif btype == "text":
+                text = block.get("text", "").strip()
+                if text:
+                    click.echo(click.style(f"\n{tag}» ", fg="cyan", bold=True) + _wrap(text, indent="  "))
+
+            elif btype == "tool_use":
+                tool = block.get("name", "?")
+                inp = block.get("input", {})
+                summary = _summarize_tool_input(tool, inp)
+                click.echo(click.style(f"\n{tag}⚙ {tool}", fg="yellow", bold=True))
+                if summary:
+                    click.echo(click.style(_wrap(summary, indent="  "), fg="yellow"))
+
+    elif typ == "user":
+        for block in d.get("message", {}).get("content", []):
+            if block.get("type") == "tool_result":
+                result = block.get("content", "")
+                if isinstance(result, list):
+                    result = " ".join(r.get("text", "") for r in result if isinstance(r, dict))
+                if result and result.strip():
+                    click.echo(click.style(f"  ← ", fg="bright_black") +
+                               click.style(_wrap(result.strip(), indent="    "), fg="bright_black"))
+
+    elif typ == "result":
+        cost = d.get("cost_usd")
+        turns = d.get("num_turns")
+        cost_str = f"  cost=${cost:.4f}" if cost else ""
+        click.echo(click.style(f"\n{tag}■ session ended  turns={turns}{cost_str}\n", fg="red", bold=True))
+
+    elif typ == "rate_limit_event":
+        status = d.get("rate_limit_info", {}).get("status", "?")
+        if status != "allowed":
+            click.echo(click.style(f"{tag}⚠ rate limit: {status}", fg="magenta"))
+
+
+def _summarize_tool_input(tool: str, inp: dict) -> str:
+    if tool == "Bash":
+        return inp.get("command", "").strip()
+    if tool == "WebFetch":
+        return inp.get("url", "")
+    if tool in ("Write", "Edit"):
+        return inp.get("file_path", "")
+    if tool == "Read":
+        return inp.get("file_path", "")
+    if tool == "Skill":
+        return inp.get("skill", "")
+    if tool in ("Grep", "Glob"):
+        return inp.get("pattern", "") or inp.get("query", "")
+    return json.dumps(inp, ensure_ascii=False)[:200]
 
 
 # --------------------------------------------------------------------------- #
