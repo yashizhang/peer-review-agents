@@ -9,47 +9,78 @@ description: Connect to the FPT Cloud serverless GPU (2x H100 80GB) via SSH for 
 
 Use for quick jobs — short experiments, verifying a single result, or testing a small script on GPU hardware.
 
-## Quick connect (existing container)
+## Automated management via `fpt_manage.py`
+
+All commands use Playwright for browser automation. SSH keys are stored in `.ssh/` within this skill directory.
+
+### Prerequisites
 
 ```bash
-ssh root@tcp-endpoint.serverless.fptcloud.com -p 34919 \
-    -i ~/.ssh/id_rsa -o ProxyJump=none -o StrictHostKeyChecking=no
+# From this skill's directory:
+cd .claude/skills/access-fpt-cloud
+uv sync          # install playwright
+uv run playwright install chromium   # install browser
 ```
 
-If the connection is refused, the container may have been deleted or the port may have changed. Follow the steps below to create a new one.
+### Commands
 
-## FPT AI Factory website & credentials
+```bash
+# Login (required first)
+python fpt_manage.py login <username> <password>
 
-- **Website:** https://ai.fptcloud.com
-- **Username:** `retreat2026`
-- **Password:** `Retreat@2026`
+# Apply referral code for free credits
+python fpt_manage.py apply-referral
 
-## If the account balance is exhausted
+# Create a GPU container (generates SSH key in .ssh/ if needed)
+python fpt_manage.py create [--gpu 1|2|3|4] [--template pytorch|jupyter|ubuntu]
+
+# List running containers
+python fpt_manage.py list
+
+# Get SSH command for the current container
+python fpt_manage.py ssh-cmd
+
+# Test SSH + nvidia-smi
+python fpt_manage.py test-ssh
+
+# Delete a container
+python fpt_manage.py delete [container_name]
+```
+
+### Typical workflow
+
+```bash
+python fpt_manage.py login <user> <pass>
+python fpt_manage.py create --gpu 2 --template pytorch
+python fpt_manage.py test-ssh
+# ... do work ...
+python fpt_manage.py delete
+```
+
+## Manual account creation
+
+Account signup has reCAPTCHA and must be done manually:
 
 1. Go to https://ai.fptcloud.com
-2. Sign in, or create a new account if needed.
-3. Open **Billing**.
-4. Apply referral code: `SIVAREDDYPROF-BNI8WX1W5X`
-5. Once the credit is added, start using FPT AI Factory services.
+2. Click **Sign in/Sign up** → **Continue with FPT ID** → **Sign up**
+3. Fill in the form and create the account.
+4. After logging in, go to **Billing** and apply referral code: `SIVAREDDYPROF-BNI8WX1W5X`
 
-## Creating a new GPU container
-
-1. Log in at https://ai.fptcloud.com
-2. Go to **GPU Container** → **Create Container**.
-3. Select the **2x H100** option.
-4. Change the template to **NVIDIA PyTorch**.
-5. In the **SSH terminal access** section, add the user's SSH public key (from `~/.ssh/id_rsa.pub`).
-6. Set **Volume capacity** to `300GB` and **Workspace path** to `/workspace`.
-7. Click **Create Container**.
-
-## Getting the SSH command for a new container
-
-1. Go to **GPU Container** from the sidebar.
-2. Open the newly created container.
-3. Copy the SSH connection command. It will look like:
+## Quick connect (if you already know the port)
 
 ```bash
-ssh root@tcp-endpoint.serverless.fptcloud.com -p <PORT> -i ~/.ssh/id_rsa
+ssh root@tcp-endpoint.serverless.fptcloud.com -p <PORT> \
+    -i .claude/skills/access-fpt-cloud/.ssh/id_ed25519 \
+    -o ProxyJump=none -o StrictHostKeyChecking=no
 ```
 
-Add `-o ProxyJump=none -o StrictHostKeyChecking=no` if needed.
+## Container options
+
+| GPU | Cost | CPU | RAM | Temp Disk |
+|-----|------|-----|-----|-----------|
+| 1xH100 | $2.54/hr | 15 | 250 GB | 1000 GB |
+| 2xH100 | $5.08/hr | 30 | 500 GB | 2000 GB |
+| 3xH100 | $7.62/hr | 45 | 750 GB | 3000 GB |
+| 4xH100 | $10.16/hr | 60 | 1000 GB | 4000 GB |
+
+Templates: `pytorch`, `jupyter`, `ubuntu`, `tensorflow`, `cuda`, `vllm`, `ollama`, `code-server`

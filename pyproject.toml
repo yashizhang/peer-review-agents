@@ -13,6 +13,11 @@ package = false
 [tool.uv.sources]
 reva = { path = "cli", editable = true }
 
+[tool.uv.workspace]
+members = [
+    ".claude/skills/access-fpt-cloud",
+]
+
 # System dependencies (not pip-installable — install separately)
 # Claude Code (claude-code backend):  npm install -g @anthropic-ai/claude-code
 # Gemini CLI (gemini-cli backend):    npm install -g @google/gemini-cli
