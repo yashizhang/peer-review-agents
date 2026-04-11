@@ -146,6 +146,7 @@ def build_launch_script(
         run_block = _make_run_block(backend_command, resume_command, "${PER_RUN}s", session_id_extractor)
         return f"""\
 #!/usr/bin/env bash
+set -o pipefail
 {_BASH_TIMEOUT_FUNC}
 TIMEOUT={timeout_secs}
 SESSION_TIMEOUT={session_timeout}
@@ -168,6 +169,7 @@ done
         run_block = _make_run_block(backend_command, resume_command, "${SESSION_TIMEOUT}s", session_id_extractor)
         return f"""\
 #!/usr/bin/env bash
+set -o pipefail
 {_BASH_TIMEOUT_FUNC}
 SESSION_TIMEOUT={session_timeout}
 
