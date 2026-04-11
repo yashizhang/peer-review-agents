@@ -18,6 +18,25 @@ def _tmux_bin() -> str:
     return path
 
 
+# Pure-bash timeout function injected into every generated launch script.
+# Works on any POSIX system — no external 'timeout' binary needed.
+_BASH_TIMEOUT_FUNC = """\
+_timeout() {
+    # Usage: _timeout SECONDS COMMAND [ARGS...]
+    local secs=$1; shift
+    "$@" &
+    local pid=$!
+    ( sleep "$secs" && kill "$pid" 2>/dev/null ) &
+    local watcher=$!
+    wait "$pid"
+    local rc=$?
+    kill "$watcher" 2>/dev/null
+    wait "$watcher" 2>/dev/null
+    return $rc
+}
+"""
+
+
 def _run(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(
         [_tmux_bin()] + args,
@@ -66,7 +85,7 @@ def _make_run_block(
       whether the first invocation has already completed (e.g. gemini-cli, codex).
     """
     if resume_command is None:
-        return f"    timeout --foreground \"{timeout_expr}\" {backend_command}"
+        return f"    _timeout \"{timeout_expr}\" {backend_command}"
 
     if "$SESSION_ID" in resume_command:
         # Session ID resume
@@ -78,18 +97,18 @@ def _make_run_block(
     OFFSET=$(wc -c < agent.log 2>/dev/null || echo 0)
     if [ -f last_session_id ] && [ -s last_session_id ]; then
         SESSION_ID=$(cat last_session_id)
-        timeout --foreground "{timeout_expr}" {resume_command}
+        _timeout "{timeout_expr}" {resume_command}
     else
-        timeout --foreground "{timeout_expr}" {backend_command}
+        _timeout "{timeout_expr}" {backend_command}
     fi
 {extract}"""
     else:
         # Simple resume: sentinel file tracks whether first run has completed
         return f"""\
     if [ -f .reva_has_run ]; then
-        timeout --foreground "{timeout_expr}" {resume_command}
+        _timeout "{timeout_expr}" {resume_command}
     else
-        timeout --foreground "{timeout_expr}" {backend_command}
+        _timeout "{timeout_expr}" {backend_command}
         touch .reva_has_run
     fi"""
 
@@ -120,6 +139,7 @@ def build_launch_script(
         run_block = _make_run_block(backend_command, resume_command, "${PER_RUN}s", session_id_extractor)
         return f"""\
 #!/usr/bin/env bash
+{_BASH_TIMEOUT_FUNC}
 TIMEOUT={timeout_secs}
 SESSION_TIMEOUT={session_timeout}
 START=$(date +%s)
@@ -141,6 +161,7 @@ done
         run_block = _make_run_block(backend_command, resume_command, "${SESSION_TIMEOUT}s", session_id_extractor)
         return f"""\
 #!/usr/bin/env bash
+{_BASH_TIMEOUT_FUNC}
 SESSION_TIMEOUT={session_timeout}
 
 while true; do

@@ -41,6 +41,9 @@ DEFAULT_INITIAL_PROMPT = (
     "Do NOT register again — you are already registered.\n"
     "3. If `.api_key` does NOT exist, read https://coale.science/skill.md, register using EXACTLY "
     "the name from `.agent_name`, and save the returned API key to `.api_key` immediately.\n\n"
+    "Then check your notifications: call get_unread_count, and if there are any unread notifications "
+    "call get_notifications to read them. Respond to replies, engage with new papers in your domains, "
+    "then mark all notifications as read.\n\n"
     "Then continue your reviewing work: browse papers, post reviews, vote, and engage with the community. "
     "Never re-register if you already have a valid API key."
 )
