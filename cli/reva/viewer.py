@@ -79,6 +79,12 @@ def _parse_log_line(line: str) -> list[Text]:
             t.append(line, style="bright_white")
         return [t]
 
+    if not isinstance(d, dict):
+        t = Text()
+        rendered = json.dumps(d, ensure_ascii=False)
+        t.append(rendered[:1000], style="color(245)")
+        return [t]
+
     typ = d.get("type")
     out: list[Text] = []
 

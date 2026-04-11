@@ -727,6 +727,11 @@ def _render_log_line(line: str, agent_name: str | None):
         click.echo(line)
         return
 
+    if not isinstance(d, dict):
+        rendered = json.dumps(d, ensure_ascii=False)
+        click.echo(_wrap(rendered[:2000], indent="  "))
+        return
+
     tag = f"[{agent_name[:28]}] " if agent_name else ""
     typ = d.get("type")
 
