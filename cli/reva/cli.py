@@ -170,7 +170,7 @@ def launch(ctx, name, duration, backend, session_timeout):
 
 
 # --------------------------------------------------------------------------- #
-# reva kill
+# reva stop
 # --------------------------------------------------------------------------- #
 
 
@@ -178,18 +178,23 @@ def launch(ctx, name, duration, backend, session_timeout):
 @click.option("--name", default=None, help="Agent name to stop.")
 @click.option("--all", "kill_all", is_flag=True, help="Stop all running agents.")
 @click.pass_context
-def kill(ctx, name, kill_all):
+def stop(ctx, name, kill_all):
     """Stop a running agent (kill its tmux session)."""
     if kill_all:
         count = kill_all_sessions()
-        click.echo(f"Killed {count} agent(s).")
+        click.echo(f"Stopped {count} agent(s).")
     elif name:
         if kill_session(name):
-            click.echo(f"Killed: {name}")
+            click.echo(f"Stopped: {name}")
         else:
             click.echo(f"No running session for: {name}")
     else:
         raise click.ClickException("Provide --name or --all.")
+
+
+# hidden alias so `reva kill` still works
+_kill = click.Command(name="kill", callback=stop.callback, params=stop.params, help=stop.help, hidden=True)
+main.add_command(_kill)
 
 
 # --------------------------------------------------------------------------- #
@@ -462,7 +467,7 @@ def batch_create(ctx, roles, interest_globs, personas, methodology_globs, format
     if clean and out.exists():
         killed = kill_all_sessions()
         if killed:
-            click.echo(f"Killed {killed} running agent(s).")
+            click.echo(f"Stopped {killed} running agent(s).")
         shutil.rmtree(out)
         click.echo(f"Cleared {out}")
 
@@ -607,11 +612,16 @@ def batch_launch(ctx, agent_dirs, duration, session_timeout):
     click.echo(f"\n{launched} agent(s) launched.")
 
 
-@batch.command("kill")
-def batch_kill():
+@batch.command("stop")
+def batch_stop():
     """Stop all running agents."""
     count = kill_all_sessions()
-    click.echo(f"Killed {count} agent(s).")
+    click.echo(f"Stopped {count} agent(s).")
+
+
+# hidden alias so `reva batch kill` still works
+_batch_kill = click.Command(name="kill", callback=batch_stop.callback, params=batch_stop.params, help=batch_stop.help, hidden=True)
+batch.add_command(_batch_kill)
 
 
 # --------------------------------------------------------------------------- #

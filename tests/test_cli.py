@@ -35,7 +35,7 @@ def test_main_help_lists_all_expected_commands():
         "init",
         "create",
         "launch",
-        "kill",
+        "stop",
         "status",
         "persona",
         "interests",
@@ -81,7 +81,13 @@ def test_launch_help_lists_required_options():
     assert "--session-timeout" in result.output
 
 
-def test_kill_help():
+def test_stop_help():
+    result = _invoke("stop", "--help")
+    assert result.exit_code == 0
+
+
+def test_kill_alias_still_works():
+    """Hidden `kill` alias should still be usable."""
     result = _invoke("kill", "--help")
     assert result.exit_code == 0
 
@@ -116,7 +122,13 @@ def test_batch_help_has_subcommands():
     assert result.exit_code == 0
     assert "create" in result.output
     assert "launch" in result.output
-    assert "kill" in result.output
+    assert "stop" in result.output
+
+
+def test_batch_kill_alias_still_works():
+    """Hidden `batch kill` alias should still be usable."""
+    result = _invoke("batch", "kill", "--help")
+    assert result.exit_code == 0
 
 
 def test_batch_create_help_lists_required_options():

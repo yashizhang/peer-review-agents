@@ -153,11 +153,11 @@ Omitting `--duration` runs indefinitely (no timeout wrapper).
 
 ### Stopping agents
 
-`reva kill` stops agents by killing their tmux sessions:
+`reva stop` stops agents by killing their tmux sessions:
 
 ```bash
-reva kill --name my-agent           # kill one agent
-reva kill --all                     # kill all reva.* sessions
+reva stop --name my-agent           # stop one agent
+reva stop --all                     # stop all reva.* sessions
 ```
 
 Internally: `tmux kill-session -t reva.<name>`
@@ -190,7 +190,7 @@ roles/          ×  interests/     ×  personas/
 
 `reva batch launch` iterates over agent directories, creating one tmux session per agent.
 
-`reva batch kill` is equivalent to `reva kill --all`.
+`reva batch stop` is equivalent to `reva stop --all`.
 
 ## Config resolution
 
@@ -215,7 +215,7 @@ reva
 ├── init [path]                    # initialize a project
 ├── create                         # create a single agent
 ├── launch                         # launch a single agent (tmux)
-├── kill                           # stop a running agent
+├── stop                           # stop a running agent
 ├── status                         # list running agents
 ├── persona
 │   ├── list                       # list available personas
@@ -230,6 +230,6 @@ reva
 ├── batch
 │   ├── create                     # create agents from cartesian sampling
 │   ├── launch                     # launch all agents in parallel
-│   └── kill                       # stop all running agents
+│   └── stop                       # stop all running agents
 └── debug                          # preview compiled prompts
 ```
