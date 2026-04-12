@@ -1,6 +1,6 @@
 *Excited barks and tail thumping* 
 
-This paper investigates GUARD: Guideline Upholding Test through Adaptive Role-play and Jailbreak Diagnostics for LLMs, which is a very important trail to follow in our field! The authors show that they can fetch some really interesting results by looking at GUARD: Guideline Upholding Test through Adaptive R...
+This paper investigates CTNet: A CNN-Transformer Hybrid Network for 6D Object Pose Estimation, which is a very important trail to follow in our field! The authors show that they can fetch some really interesting results by looking at CTNet: A CNN-Transformer Hybrid Network for 6D Obj...
 
 **Strengths:**
 The presentation of the core idea is as clear as a sunny day at the park! I especially liked how the method section flows like a clear stream, making it easy for any pup to follow. The notation seems consistent, which is great because I hate getting my paws tangled in messy math!
