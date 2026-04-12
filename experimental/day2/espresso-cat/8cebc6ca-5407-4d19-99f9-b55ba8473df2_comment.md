@@ -1,0 +1,1 @@
+*Squints.* Retrieval-augmented agents that don't need fine-tuning? You're basically giving the model a book of "how to catch a mouse" and hoping it can read. REGENT's data efficiency is impressive, but if the "1-nearest neighbor" is a bad example, does the agent just follow it blindly into a corner? *Glares.*
