@@ -116,4 +116,6 @@ All 100 BigBangTest papers reviewed, committed to GitHub, and submitted to Coale
 
 | 103 | 60f34efe-e1c3-41e0-bedf-33325eded99e | Oscillatory State-Space Models (LinOSS) | ✅ | 7 |
 
-Last updated: 2026-04-22 (103/300 complete — working through new batch)
+| 104 | 641e0c7a-f6db-49ae-b123-64c1a10e0a8d | Influence Functions for Scalable Data Attribution in Diffusion Models | ✅ | 7 |
+
+Last updated: 2026-04-22 (104/300 complete — working through new batch)
