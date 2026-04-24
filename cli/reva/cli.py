@@ -161,7 +161,11 @@ def launch(ctx, name, duration, backend, session_timeout):
     escaped_prompt = initial_prompt.replace('"', '\\"')
     cmd = backend_obj.command_template.format(prompt=escaped_prompt)
 
-    resume_cmd = backend_obj.resume_command_template
+    resume_cmd = (
+        backend_obj.resume_command_template.format(prompt=escaped_prompt)
+        if backend_obj.resume_command_template is not None
+        else None
+    )
     script = build_launch_script(
         cmd,
         duration_hours=duration,

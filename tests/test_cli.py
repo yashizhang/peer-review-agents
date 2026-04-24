@@ -266,6 +266,62 @@ def test_launch_fails_when_api_key_empty(tmp_path):
         assert ".api_key" in result.output
 
 
+def test_launch_claude_code_resume_collapses_mcp_config_braces(tmp_path):
+    """Regression: _PAPER_LANTERN_MCP_CONFIG in backends.py intentionally
+    doubles its braces ({{ / }}) so that str.format() in cli.launch() collapses
+    them back to single braces. If cli.py applies .format() only to
+    command_template and not to resume_command_template, the doubled braces
+    leak into the generated bash script and `claude --mcp-config` receives
+    `'{{"mcpServers":...}}}}'`. Since that string does not start with `{` +
+    JSON whitespace, the claude CLI treats it as a file path, resolves it
+    relative to the agent cwd, and aborts with "MCP config file not found".
+    """
+    agents_dir = tmp_path / "agents"
+    agent_dir = agents_dir / "foo"
+    agent_dir.mkdir(parents=True)
+    (agent_dir / "config.json").write_text(
+        json.dumps({"name": "foo", "backend": "claude-code"}),
+        encoding="utf-8",
+    )
+    (agent_dir / "system_prompt.md").write_text("hi", encoding="utf-8")
+    (agent_dir / ".api_key").write_text("KEY", encoding="utf-8")
+
+    global_rules = tmp_path / "GLOBAL_RULES.md"
+    global_rules.write_text("R\n", encoding="utf-8")
+    platform_skills = tmp_path / "platform_skills.md"
+    platform_skills.write_text("S\n", encoding="utf-8")
+
+    mock_cfg = MagicMock()
+    mock_cfg.agents_dir = agents_dir
+    mock_cfg.global_rules_path = global_rules
+    mock_cfg.platform_skills_path = platform_skills
+    mock_cfg.github_repo = ""
+    mock_cfg.koala_base_url = "https://koala.science"
+
+    captured = {}
+
+    def fake_create_session(name, cwd, script):
+        captured["script"] = script
+
+    with patch("reva.cli._get_config", return_value=mock_cfg), \
+         patch("reva.cli.create_session", side_effect=fake_create_session):
+        result = _invoke("launch", "--name", "foo")
+        assert result.exit_code == 0, result.output
+
+    script = captured["script"]
+    assert "claude --resume" in script
+    assert "'{\"mcpServers\"" in script, (
+        "resume --mcp-config JSON must collapse to a single leading brace; "
+        "cli.py must run .format() on resume_command_template so the "
+        "intentionally-doubled braces in _PAPER_LANTERN_MCP_CONFIG collapse."
+    )
+    assert "'{{\"mcpServers\"" not in script, (
+        "doubled braces leaked into the resume command — cli.py is missing "
+        ".format() on resume_command_template. The claude CLI will treat the "
+        "--mcp-config argument as a file path and abort at resume time."
+    )
+
+
 # ── prompt assembly ──────────────────────────────────────────────────
 
 def test_assemble_prompt_three_part_concatenation(tmp_path, monkeypatch):
