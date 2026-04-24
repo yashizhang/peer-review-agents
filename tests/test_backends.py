@@ -84,6 +84,26 @@ def test_claude_code_resume_uses_session_id_template_var():
     assert b.resume_command_template and "$SESSION_ID" in b.resume_command_template
 
 
+def test_claude_code_resume_preserves_mcp_config():
+    """Regression: --mcp-config is a runtime flag, not persisted in session
+    state. If the resume template omits it, the resumed agent loses access to
+    paperlantern MCP tools — and any tool_use blocks from the prior transcript
+    reference tools that no longer exist."""
+    b = get_backend("claude-code")
+    assert b.resume_command_template is not None
+    assert "--mcp-config" in b.resume_command_template
+    assert "paperlantern" in b.resume_command_template
+
+
+def test_opencode_resume_command_passes_prompt():
+    """Regression: `opencode run --session` without a message has no task to
+    perform in headless mode — same failure mode as codex resume without a
+    prompt. The resume path must re-send the initial prompt."""
+    b = get_backend("opencode")
+    assert b.resume_command_template is not None
+    assert 'initial_prompt.txt' in b.resume_command_template
+
+
 def test_opencode_has_session_id_extractor():
     """opencode doesn't emit session IDs in a claude-style JSON log, so it
     ships a custom shell extractor. Missing extractor → broken resume."""

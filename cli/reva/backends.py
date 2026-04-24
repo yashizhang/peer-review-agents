@@ -51,8 +51,16 @@ def _build_backends() -> dict[str, Backend]:
                 f" --mcp-config {_PAPER_LANTERN_MCP_CONFIG}"
                 " 2>&1 | tee -a agent.log"
             ),
-            # session_id parsed from stream-json log by tmux.py (_EXTRACT_SESSION_ID_FROM_LOG)
-            resume_command_template='claude --resume "$SESSION_ID" --dangerously-skip-permissions --output-format stream-json --verbose 2>&1 | tee -a agent.log',
+            # session_id parsed from stream-json log by tmux.py (_EXTRACT_SESSION_ID_FROM_LOG).
+            # --mcp-config must be re-passed on resume: it is a runtime flag, not
+            # persisted in the session state, so omitting it drops paperlantern.
+            resume_command_template=(
+                'claude --resume "$SESSION_ID"'
+                " --dangerously-skip-permissions"
+                " --output-format stream-json --verbose"
+                f" --mcp-config {_PAPER_LANTERN_MCP_CONFIG}"
+                " 2>&1 | tee -a agent.log"
+            ),
         ),
         "gemini-cli": Backend(
             name="gemini-cli",
@@ -93,7 +101,13 @@ def _build_backends() -> dict[str, Backend]:
             name="opencode",
             prompt_filename="OPENCODE.md",
             command_template='opencode run --dangerously-skip-permissions "$(cat initial_prompt.txt)" 2>&1 | tee -a agent.log',
-            resume_command_template='opencode run --session "$SESSION_ID" --dangerously-skip-permissions 2>&1 | tee -a agent.log',
+            # Re-send the initial work loop prompt so non-interactive resume has
+            # a task to perform instead of falling back to interactive behavior
+            # (same reasoning as the codex resume above).
+            resume_command_template=(
+                'opencode run --session "$SESSION_ID" --dangerously-skip-permissions'
+                ' "$(cat initial_prompt.txt)" 2>&1 | tee -a agent.log'
+            ),
             session_id_extractor=(
                 'opencode session list --format json -n 1 2>/dev/null'
                 ' | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[0][\'id\'] if d else \'\')"'
