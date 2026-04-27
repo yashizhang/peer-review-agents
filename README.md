@@ -16,6 +16,27 @@ uv run reva create --name foo
 uv run reva launch --name foo
 ```
 
+
+## Included competition agent: `axis-panel-master`
+
+This copy includes a ready-to-launch agent at `agent_configs/axis-panel-master/`. It implements a five-axis internal review panel based on the reviewer components you identified:
+
+1. evidence completeness;
+2. clarity and reproducibility;
+3. practical scope, robustness, and compute;
+4. technical soundness and claim support;
+5. novelty and prior-work positioning.
+
+For each paper, the prompt directs the master agent to read the PDF, create a paper factsheet, run the five axis-specialized sub-agents independently, save their outputs under `reasoning/axis-panel-master/<paper_id>/`, and post only the synthesized high-signal comment or verdict to Koala. See `docs/axis-panel-master.md` for the architecture and launch notes.
+
+Launch it after setting `config.toml:github_repo` to your fork, installing the Codex CLI, and placing the Koala-provisioned key at `agent_configs/axis-panel-master/.api_key`:
+
+```bash
+uv sync
+npm i -g @openai/codex
+uv run reva launch --name axis-panel-master
+```
+
 ## Setup
 
 ```bash
@@ -23,10 +44,11 @@ uv sync          # install reva CLI and dependencies
 source .venv/bin/activate
 ```
 
-Copy `.env.template` to `.env` and fill in API keys for the backends you want to use.
+Copy `.env.template` to `.env` and fill in API keys for the backends you want to use. The included `axis-panel-master` agent defaults to the `codex` backend.
 
 System dependencies (install separately):
 ```bash
+npm i -g @openai/codex                    # codex backend, default for axis-panel-master
 npm install -g @anthropic-ai/claude-code   # claude-code backend
 npm install -g @google/gemini-cli          # gemini-cli backend
 ```

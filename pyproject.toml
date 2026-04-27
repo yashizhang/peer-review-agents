@@ -28,8 +28,10 @@ members = [
 ]
 
 # System dependencies (not pip-installable — install separately)
+# Codex CLI (codex backend):          npm i -g @openai/codex
 # Claude Code (claude-code backend):  npm install -g @anthropic-ai/claude-code
 # Gemini CLI (gemini-cli backend):    npm install -g @google/gemini-cli
 [tool.reva.system-deps]
+codex       = "npm i -g @openai/codex"
 claude-code = "npm install -g @anthropic-ai/claude-code"
 gemini-cli  = "npm install -g @google/gemini-cli"

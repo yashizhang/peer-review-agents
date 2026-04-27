@@ -1,0 +1,218 @@
+{
+  "candidates": [
+    {
+      "variant": "v1_harness_aligned",
+      "prompt_path": "agent_configs/iclr-desk-reject/variants/v1_harness_aligned.md",
+      "prompt_length": 3417,
+      "train": {
+        "total": 40,
+        "strict": {
+          "accuracy": 0.525,
+          "tp": 7,
+          "tn": 14,
+          "fp": 6,
+          "fn": 13
+        },
+        "lenient": {
+          "accuracy": 0.375,
+          "tp": 9,
+          "tn": 6,
+          "fp": 14,
+          "fn": 11
+        }
+      },
+      "val": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.5,
+          "tp": 2,
+          "tn": 3,
+          "fp": 2,
+          "fn": 3
+        },
+        "lenient": {
+          "accuracy": 0.6,
+          "tp": 4,
+          "tn": 2,
+          "fp": 3,
+          "fn": 1
+        }
+      }
+    },
+    {
+      "variant": "v2_page_conservative",
+      "prompt_path": "agent_configs/iclr-desk-reject/variants/v2_page_conservative.md",
+      "prompt_length": 3639,
+      "train": {
+        "total": 40,
+        "strict": {
+          "accuracy": 0.45,
+          "tp": 7,
+          "tn": 11,
+          "fp": 9,
+          "fn": 13
+        },
+        "lenient": {
+          "accuracy": 0.375,
+          "tp": 8,
+          "tn": 7,
+          "fp": 13,
+          "fn": 12
+        }
+      },
+      "val": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.5,
+          "tp": 3,
+          "tn": 2,
+          "fp": 3,
+          "fn": 2
+        },
+        "lenient": {
+          "accuracy": 0.5,
+          "tp": 3,
+          "tn": 2,
+          "fp": 3,
+          "fn": 2
+        }
+      }
+    },
+    {
+      "variant": "v3_integrity_conservative",
+      "prompt_path": "agent_configs/iclr-desk-reject/variants/v3_integrity_conservative.md",
+      "prompt_length": 3795,
+      "train": {
+        "total": 40,
+        "strict": {
+          "accuracy": 0.425,
+          "tp": 6,
+          "tn": 11,
+          "fp": 9,
+          "fn": 14
+        },
+        "lenient": {
+          "accuracy": 0.5,
+          "tp": 13,
+          "tn": 7,
+          "fp": 13,
+          "fn": 7
+        }
+      },
+      "val": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.4,
+          "tp": 2,
+          "tn": 2,
+          "fp": 3,
+          "fn": 3
+        },
+        "lenient": {
+          "accuracy": 0.6,
+          "tp": 4,
+          "tn": 2,
+          "fp": 3,
+          "fn": 1
+        }
+      }
+    }
+  ],
+  "selected_variant": "v1_harness_aligned",
+  "selected_prompt_path": "agent_configs/iclr-desk-reject/variants/v1_harness_aligned.md",
+  "test": {
+    "total": 10,
+    "strict": {
+      "accuracy": 0.7,
+      "tp": 2,
+      "tn": 5,
+      "fp": 0,
+      "fn": 3
+    },
+    "lenient": {
+      "accuracy": 0.6,
+      "tp": 4,
+      "tn": 2,
+      "fp": 3,
+      "fn": 1
+    }
+  },
+  "comparison": {
+    "val": {
+      "baseline": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.4,
+          "tp": 3,
+          "tn": 1,
+          "fp": 4,
+          "fn": 2
+        },
+        "lenient": {
+          "accuracy": 0.5,
+          "tp": 5,
+          "tn": 0,
+          "fp": 5,
+          "fn": 0
+        }
+      },
+      "candidate": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.5,
+          "tp": 2,
+          "tn": 3,
+          "fp": 2,
+          "fn": 3
+        },
+        "lenient": {
+          "accuracy": 0.6,
+          "tp": 4,
+          "tn": 2,
+          "fp": 3,
+          "fn": 1
+        }
+      },
+      "strict_delta": 0.09999999999999998,
+      "lenient_delta": 0.09999999999999998
+    },
+    "test": {
+      "baseline": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.5,
+          "tp": 3,
+          "tn": 2,
+          "fp": 3,
+          "fn": 2
+        },
+        "lenient": {
+          "accuracy": 0.6,
+          "tp": 4,
+          "tn": 2,
+          "fp": 3,
+          "fn": 1
+        }
+      },
+      "candidate": {
+        "total": 10,
+        "strict": {
+          "accuracy": 0.7,
+          "tp": 2,
+          "tn": 5,
+          "fp": 0,
+          "fn": 3
+        },
+        "lenient": {
+          "accuracy": 0.6,
+          "tp": 4,
+          "tn": 2,
+          "fp": 3,
+          "fn": 1
+        }
+      },
+      "strict_delta": 0.19999999999999996,
+      "lenient_delta": 0.0
+    }
+  }
+}
