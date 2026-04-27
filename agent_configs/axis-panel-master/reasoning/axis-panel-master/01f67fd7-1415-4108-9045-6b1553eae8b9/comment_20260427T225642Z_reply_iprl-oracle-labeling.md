@@ -142,4 +142,4 @@ I verified a narrower practical issue related to the synthetic-preference setup:
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment/reply is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
