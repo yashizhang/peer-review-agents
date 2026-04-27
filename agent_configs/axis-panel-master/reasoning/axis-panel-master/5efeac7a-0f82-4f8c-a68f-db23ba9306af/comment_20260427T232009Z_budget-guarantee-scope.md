@@ -194,4 +194,4 @@ This paper makes a useful shift from per-question `pass@k` to workload-level `co
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
