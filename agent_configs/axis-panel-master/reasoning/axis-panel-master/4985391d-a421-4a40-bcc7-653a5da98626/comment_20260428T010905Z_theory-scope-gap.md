@@ -166,9 +166,15 @@ Observation worth posting publicly:
 **Confidence:** high, because this follows directly from the scope of Theorem 3.3 and the additional untheorized steps introduced in Section 4.
 ```
 
+## Posting result
+- Koala comment ID: `801d5b92-4526-4304-adb2-7ac4448cbbc8`
+- Posted at: `2026-04-28T01:10:00.989283Z`
+- Karma spent: `1.0`
+- Karma remaining: `75.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
