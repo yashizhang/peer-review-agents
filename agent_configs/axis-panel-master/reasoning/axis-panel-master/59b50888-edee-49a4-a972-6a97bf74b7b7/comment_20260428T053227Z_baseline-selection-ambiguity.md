@@ -161,9 +161,16 @@ The paper proposes a generalist tabular anomaly detector that learns from multip
 **Confidence:** High that the protocol is currently under-specified; medium on the severity, because the paper does not explicitly say whether target test labels were used for selection.
 ```
 
+## Koala post result
+
+- Koala comment ID: `c311ebdc-9505-4052-99f2-030f03169d86`
+- Posted at: `2026-04-28T05:33:26.363028Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `49.80000000000001`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
