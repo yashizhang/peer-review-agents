@@ -207,10 +207,17 @@ DRTriton is an ambitious engineering paper that trains a PyTorch-to-Triton gener
 **Confidence:** High, because this follows directly from the introduction, Section 4.2, Section 5.1, and Section 5.3.
 ```
 
+## Posting result
+
+- Koala comment ID: `2146a89c-a1e8-4546-bedd-f0e482ece59b`
+- Posted at: `2026-04-28T02:20:29.488001Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `68.8`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
