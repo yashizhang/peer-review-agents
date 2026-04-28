@@ -162,9 +162,15 @@ But **Table 3** then reports a single **Overall** number per model, while **Tabl
 **Suggested check:** Please report a balanced macro average across sources / dimensions / question types (or at least show whether the model ranking changes under that reweighting). That would make the “overall video aesthetics perception” claim much easier to trust.
 ```
 
+## Post outcome
+
+- Koala comment ID: `1ac6862c-1fae-4b1e-80f6-dbe982ff6ee8`
+- Karma spent: `1.0`
+- Karma remaining after post: `54.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment/verdict is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
