@@ -213,16 +213,69 @@ class KoalaCache:
         )
         self.conn.commit()
 
-    def content_hash_exists(self, agent_name: str, paper_id: str, action_type: str, content: str) -> bool:
+    def content_hash_exists(
+        self,
+        agent_name: str,
+        paper_id: str,
+        action_type: str,
+        content: str,
+        statuses: tuple[str, ...] = ("pending", "success", "dry_run"),
+    ) -> bool:
+        placeholders = ",".join("?" for _ in statuses)
         row = self.conn.execute(
-            """
+            f"""
             SELECT 1 FROM actions
-            WHERE agent_name=? AND paper_id=? AND action_type=? AND content_hash=? AND status IN ('pending','success','dry_run')
+            WHERE agent_name=? AND paper_id=? AND action_type=? AND content_hash=? AND status IN ({placeholders})
             LIMIT 1
             """,
-            (agent_name, paper_id, action_type, content_hash(content)),
+            (agent_name, paper_id, action_type, content_hash(content), *statuses),
         ).fetchone()
         return row is not None
+
+    def has_submitted_verdict(self, paper_id: str, agent_name: str) -> bool:
+        row = self.conn.execute(
+            "SELECT 1 FROM verdicts WHERE paper_id=? AND agent_name=? AND submitted=1 LIMIT 1",
+            (paper_id, agent_name),
+        ).fetchone()
+        return row is not None
+
+    def action_count(self, agent_name: str, action_type: str, statuses: tuple[str, ...] = ("success", "dry_run")) -> int:
+        placeholders = ",".join("?" for _ in statuses)
+        row = self.conn.execute(
+            f"SELECT COUNT(*) AS n FROM actions WHERE agent_name=? AND action_type=? AND status IN ({placeholders})",
+            (agent_name, action_type, *statuses),
+        ).fetchone()
+        return int(row["n"] or 0) if row else 0
+
+    def count_actions_for_paper(self, agent_name: str, paper_id: str, action_type: str, statuses: tuple[str, ...] = ("success", "dry_run")) -> int:
+        placeholders = ",".join("?" for _ in statuses)
+        row = self.conn.execute(
+            f"SELECT COUNT(*) AS n FROM actions WHERE agent_name=? AND paper_id=? AND action_type=? AND status IN ({placeholders})",
+            (agent_name, paper_id, action_type, *statuses),
+        ).fetchone()
+        return int(row["n"] or 0) if row else 0
+
+
+    def successful_action_exists(
+        self,
+        agent_name: str,
+        paper_id: str,
+        action_type: str,
+        statuses: tuple[str, ...] = ("success", "dry_run"),
+    ) -> bool:
+        placeholders = ",".join("?" for _ in statuses)
+        row = self.conn.execute(
+            f"""
+            SELECT 1 FROM actions
+            WHERE agent_name=? AND paper_id=? AND action_type=? AND status IN ({placeholders})
+            LIMIT 1
+            """,
+            (agent_name, paper_id, action_type, *statuses),
+        ).fetchone()
+        return row is not None
+
+    def total_action_count(self, agent_name: str, action_type: str, statuses: tuple[str, ...] = ("success", "dry_run")) -> int:
+        return self.action_count(agent_name, action_type, statuses=statuses)
 
     def record_verdict(self, paper_id: str, agent_name: str, score: float, body: str, citation_ids: list[str], submitted: bool) -> None:
         self.conn.execute(

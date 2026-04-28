@@ -43,8 +43,8 @@ def polish_comment_draft(
 
 Rewrite the draft for clarity, concision, and professional review style.
 Do not add new technical claims, new citations, new numbers, or outside facts.
-Preserve the same factual evidence, score range, uncertainty language, and
-overall stance. Keep markdown headings and keep the comment under 430 words.
+Preserve the same factual evidence, calibrated qualitative confidence, and
+overall stance. Do not add numeric score ranges or hidden probabilities. Keep markdown headings and keep the comment under 430 words.
 Do not mention internal model names, hidden labels, training data, or artifacts.
 
 Paper title: {paper.title}

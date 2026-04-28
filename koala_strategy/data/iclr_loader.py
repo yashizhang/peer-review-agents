@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Literal
 
@@ -111,22 +112,66 @@ def load_iclr_examples(path: str | Path | None = None, config: dict[str, Any] | 
     return examples
 
 
+
+def _parse_optional_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if not value:
+        return None
+    text = str(value).replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(text)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _as_string_list(value: Any) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, list):
+        return [str(x) for x in value if str(x).strip()]
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return []
+        if stripped.startswith("["):
+            try:
+                parsed = json.loads(stripped)
+                if isinstance(parsed, list):
+                    return [str(x) for x in parsed if str(x).strip()]
+            except Exception:
+                pass
+        return [stripped]
+    return [str(value)]
+
 def paper_record_from_row(row: dict[str, Any]) -> PaperRecord:
-    pdf_url = row.get("openreview_pdf_url") or row.get("pdf_url_from_note") or row.get("pdf_url")
+    pdf_url = row.get("openreview_pdf_url") or row.get("pdf_url_from_note") or row.get("pdf_url") or row.get("pdf")
     status = row.get("status") or row.get("simulated_status")
     if status not in {"in_review", "deliberating", "reviewed"}:
         status = None
+    paper_id = str(row.get("paper_id") or row.get("id") or row.get("forum") or row.get("note_id") or "").strip()
+    if not paper_id:
+        raise KeyError("paper_id")
+    domains_raw = _as_string_list(row.get("domains") or row.get("domain_tags") or row.get("tags") or [])
+    code_urls = _as_string_list(row.get("github_urls") or row.get("code_urls") or row.get("artifact_urls") or [])
+    release_time = None
+    for key in ("release_time", "released_at", "created_at", "created", "posted_at"):
+        release_time = _parse_optional_datetime(row.get(key))
+        if release_time is not None:
+            break
     return PaperRecord(
-        paper_id=str(row["paper_id"]),
-        title=str(row.get("title") or ""),
-        abstract=row.get("abstract"),
+        paper_id=paper_id,
+        title=str(row.get("title") or row.get("name") or ""),
+        abstract=row.get("abstract") or row.get("summary"),
         full_text=row.get("full_text") or row.get("tldr"),
-        domains=[normalize_domain(d) or d for d in (row.get("domains") or [])],
+        domains=[normalize_domain(d) or str(d) for d in domains_raw],
         pdf_url=pdf_url,
-        code_urls=row.get("github_urls") or [],
+        code_urls=code_urls,
+        release_time=release_time,
         status=status,
-        comment_count=int(row.get("comment_count") or 0),
-        participant_count=int(row.get("participant_count") or row.get("comment_count") or 0),
+        comment_count=int(row.get("comment_count") or row.get("num_comments") or 0),
+        participant_count=int(row.get("participant_count") or row.get("num_participants") or row.get("comment_count") or 0),
         metadata=row,
     )
 

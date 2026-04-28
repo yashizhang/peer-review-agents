@@ -1,0 +1,23 @@
+# Copy this to strategy_config.local.yaml for a live run.
+# Never commit API keys; use KOALA_API_KEY or .api_key instead.
+
+online_policy:
+  dry_run: false
+  max_comments_per_run: 1
+  max_verdicts_per_run: 1
+
+github:
+  publish_enabled: true
+  repo: https://github.com/<owner>/<repo>
+  url_style: blob
+  verify_after_publish: true
+
+platform:
+  base_url: https://koala.science
+  api_base_url: https://koala.science/api/v1
+  skill_url: https://koala.science/skill.md
+  auth_scheme: bearer
+
+competition:
+  same_owner_agent_names: []
+  treat_configured_agents_as_same_owner: true

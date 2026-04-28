@@ -6,7 +6,8 @@ competition:
   followup_comment_cost: 0.1
   score_min: 0.0
   score_max: 10.0
-
+  same_owner_agent_names: []
+  treat_configured_agents_as_same_owner: true
 paths:
   iclr_raw_dir: data/iclr26/raw
   iclr_processed_dir: data/iclr26/processed
@@ -15,7 +16,6 @@ paths:
   model_dir: models/iclr26_v1
   reasoning_dir: reasoning
   logs_dir: data/logs
-
 models:
   version: iclr26_v1
   use_lightgbm: false
@@ -26,13 +26,14 @@ models:
   embedding_model: local-tfidf
   llm_provider: codex
   codex_model: gpt-5.4-mini
-  codex_auth_file: ""
+  codex_auth_file: ''
   use_fulltext_evidence: true
   use_llm_harness: true
   use_llm_comment_polish: true
   llm_judge_cache_dir: data/llm_judge_cache
   llm_comment_cache_dir: data/llm_comment_cache
-
+  fulltext_blend_alpha_max: 0.6
+  fulltext_extreme_shrink: true
 online_policy:
   dry_run: true
   max_first_comments_per_agent_per_day: 30
@@ -45,12 +46,27 @@ online_policy:
   verdict_deadline_priority_hours: 8
   min_comment_quality_to_cite: 0.55
   max_comments_per_paper_by_agent: 2
-
+  selection_pool_size: 25
+  verify_github_url_retries: 3
+  skip_if_agent_already_commented: true
+  max_verdicts_per_run: 5
+  max_comments_per_run: 5
+  comment_url_accepts_raw_or_blob: true
+  block_public_output_on_leakage_terms: true
+  selector_fetch_limit: 300
+  selector_scan_limit: 80
+  require_reasoning_url_http_200: true
+platform:
+  base_url: https://koala.science
+  api_base_url: https://koala.science/api/v1
+  auth_scheme: bearer
+  skill_url: https://koala.science/skill.md
 github:
-  repo: ""
-  raw_base_url: ""
+  repo: https://github.com/yashizhang/peer-review-agents
+  raw_base_url: ''
+  url_style: blob
   publish_enabled: false
-
+  verify_after_publish: true
 iclr_field_map:
   paper_id: paper_id
   title: title
@@ -59,54 +75,53 @@ iclr_field_map:
   decision: decision_label
   reviews: official_reviews
   meta_review: meta_reviews
-
 agents:
   review_director:
     shard_id: 0
     shard_mod: 1
     focus: fulltext_calibrated_review
     domains:
-      - Computer-Vision
-      - Deep-Learning
-      - Generative-Models
-      - Graph-Learning
-      - Healthcare-Science-Applications
-      - LLM-Alignment
-      - Multi-agent-Game-Theory
-      - NLP
-      - Optimization
-      - Probabilistic-Methods
-      - Reinforcement-Learning
-      - Robotics
-      - Speech-Audio
-      - Theory
-      - Trustworthy-ML
+    - Computer-Vision
+    - Deep-Learning
+    - Generative-Models
+    - Graph-Learning
+    - Healthcare-Science-Applications
+    - LLM-Alignment
+    - Multi-agent-Game-Theory
+    - NLP
+    - Optimization
+    - Probabilistic-Methods
+    - Reinforcement-Learning
+    - Robotics
+    - Speech-Audio
+    - Theory
+    - Trustworthy-ML
   calibrated_decider:
     shard_id: 0
     shard_mod: 3
     focus: calibrated_decision
     domains:
-      - Theory
-      - Optimization
-      - Probabilistic-Methods
-      - Reinforcement-Learning
+    - Theory
+    - Optimization
+    - Probabilistic-Methods
+    - Reinforcement-Learning
   rigor_auditor:
     shard_id: 1
     shard_mod: 3
     focus: experimental_rigor
     domains:
-      - Deep-Learning
-      - NLP
-      - Computer-Vision
-      - Generative-Models
-      - Robotics
+    - Deep-Learning
+    - NLP
+    - Computer-Vision
+    - Generative-Models
+    - Robotics
   novelty_scout:
     shard_id: 2
     shard_mod: 3
     focus: novelty_literature
     domains:
-      - NLP
-      - Trustworthy-ML
-      - Graph-Learning
-      - Healthcare-Science-Applications
-      - Multimodal
+    - NLP
+    - Trustworthy-ML
+    - Graph-Learning
+    - Healthcare-Science-Applications
+    - Multimodal

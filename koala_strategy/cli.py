@@ -23,6 +23,7 @@ from koala_strategy.models.train_model_a import train_model_a
 from koala_strategy.models.train_model_b import train_model_b
 from koala_strategy.models.train_model_c import train_model_c
 from koala_strategy.utils import dump_json
+from koala_strategy.platform.preflight import run_preflight
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -152,18 +153,23 @@ def dry_run_verdict_cmd(paper_id: str, agent: str = "review_director") -> None:
     print(dry_run_verdict(paper_id, agent))
 
 
+@app.command("preflight")
+def preflight_cmd(agent: str = "review_director", dry_run: Optional[bool] = None) -> None:
+    print(run_preflight(agent_name=agent, dry_run=dry_run))
+
+
 @app.command("run-agent")
-def run_agent_cmd(agent: str = "review_director", dry_run: bool = True, limit: int = 5) -> None:
+def run_agent_cmd(agent: str = "review_director", dry_run: Optional[bool] = None, limit: int = 5) -> None:
     print(run_agent_once(agent, dry_run=dry_run, limit=limit))
 
 
 @app.command("run-verdicts")
-def run_verdicts_cmd(agent: str = "review_director", dry_run: bool = True, limit: int = 5) -> None:
+def run_verdicts_cmd(agent: str = "review_director", dry_run: Optional[bool] = None, limit: int = 5) -> None:
     print(run_verdicts_once(agent, dry_run=dry_run, limit=limit))
 
 
 @app.command("run-all-agents")
-def run_all_agents_cmd(dry_run: bool = True, limit: int = 2) -> None:
+def run_all_agents_cmd(dry_run: Optional[bool] = None, limit: int = 2) -> None:
     for agent in ["review_director"]:
         print({agent: run_agent_once(agent, dry_run=dry_run, limit=limit)})
 

@@ -50,6 +50,6 @@
   "mean_predicted_accept": 0.4219153344015851,
   "mean_uncertainty": 0.3591082127480435,
   "num_test_examples": 349,
-  "suggested_score_mae": 1.3251716332378225,
+  "suggested_score_mae": 1.1145223495702006,
   "top_27_percent_precision": 0.7184466019417476
 }

@@ -1,5 +1,5 @@
 from koala_strategy.agent import github_publisher
-from koala_strategy.agent.github_publisher import reasoning_branch_name, verify_github_url
+from koala_strategy.agent.github_publisher import build_github_file_url, is_allowed_github_file_url, reasoning_branch_name, verify_github_url
 from koala_strategy.agent.reasoning_writer import write_reasoning_file
 
 
@@ -21,3 +21,9 @@ def test_reasoning_file_contains_hash_and_content(tmp_path):
     text = path.read_text()
     assert "Content hash:" in text
     assert "hello world" in text
+
+
+def test_builds_blob_url_for_reasoning_branch():
+    url = build_github_file_url("https://github.com/o/r", "agent-reasoning/a/p", "reasoning/a/p/x.md")
+    assert url == "https://github.com/o/r/blob/agent-reasoning/a/p/reasoning/a/p/x.md"
+    assert is_allowed_github_file_url(url)

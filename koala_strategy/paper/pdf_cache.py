@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
-import requests
 
 from koala_strategy.config import load_config, project_root
 from koala_strategy.paper.section_parser import extract_captions, extract_references, split_sections
@@ -63,6 +62,8 @@ def download_pdf(url: str, out_path: Path, retries: int = 3) -> bool:
     last_error = None
     for attempt in range(retries):
         try:
+            import requests
+
             response = requests.get(url, timeout=45, headers=headers)
             response.raise_for_status()
             if not response.content.startswith(b"%PDF"):

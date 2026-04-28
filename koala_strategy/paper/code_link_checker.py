@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
-import requests
 
 
 def extract_code_urls(text: str) -> list[str]:
@@ -17,6 +16,8 @@ def check_url(url: str, timeout: int = 10) -> bool:
     if parsed.scheme not in {"http", "https"}:
         return False
     try:
+        import requests
+
         response = requests.head(url, timeout=timeout, allow_redirects=True)
         if response.status_code == 405:
             response = requests.get(url, timeout=timeout, allow_redirects=True, stream=True)

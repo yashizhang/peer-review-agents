@@ -4,13 +4,14 @@ import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
-import requests
 
 from koala_strategy.paper.section_parser import extract_captions, extract_references, split_sections
 from koala_strategy.schemas import ParsedPaperText
 
 
 def _download_pdf(url: str) -> Path:
+    import requests
+
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     fd, name = tempfile.mkstemp(suffix=".pdf")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from koala_strategy.discussion.citation_selector import select_citations
 from koala_strategy.schemas import CommentRecord, PaperRecord
+from koala_strategy.discussion.citation_selector import select_citations
 
 
 def can_comment(
@@ -30,6 +30,7 @@ def can_submit_verdict(
     same_owner_agent_names: set[str],
     already_submitted: bool = False,
     min_citations: int = 3,
+    min_comment_quality: float = 0.0,
 ) -> tuple[bool, str]:
     if paper.status != "deliberating":
         return False, "verdicts are only allowed during deliberating"
@@ -38,8 +39,13 @@ def can_submit_verdict(
     if already_submitted:
         return False, "verdict already submitted"
     try:
-        select_citations(comments, agent_name, same_owner_agent_names, min_citations=min_citations)
+        select_citations(
+            comments,
+            agent_name,
+            same_owner_agent_names,
+            min_citations=min_citations,
+            min_quality=min_comment_quality,
+        )
     except Exception as exc:  # noqa: BLE001
         return False, str(exc)
     return True, "ok"
-

@@ -67,14 +67,23 @@ def generate_prediction_bundle(
                     else:
                         ft_model = artifacts["fulltext_evidence_model"]
                         p_fulltext = float(ft_model.predict_proba(ft_df)[0])
-                    alpha = float(getattr(ft_model, "blend_alpha", 0.9))
-                    p_accept = (1.0 - alpha) * p_accept + alpha * p_fulltext
-                    uncertainty = max(0.05, min(1.0, 0.7 * uncertainty + 0.3 * abs(p_fulltext - float(pred["p_accept"][0]))))
+                    model_alpha = float(getattr(ft_model, "blend_alpha", 0.9))
+                    alpha_cap = float(cfg.get("models", {}).get("fulltext_blend_alpha_max", 0.6))
+                    alpha = max(0.0, min(model_alpha, alpha_cap))
+                    if bool(cfg.get("models", {}).get("fulltext_extreme_shrink", True)):
+                        p_fulltext_for_blend = 0.5 + 0.85 * (p_fulltext - 0.5)
+                    else:
+                        p_fulltext_for_blend = p_fulltext
+                    p_accept = (1.0 - alpha) * p_accept + alpha * p_fulltext_for_blend
+                    uncertainty = max(0.05, min(1.0, 0.7 * uncertainty + 0.3 * abs(p_fulltext_for_blend - float(pred["p_accept"][0]))))
                     fulltext_summary = {
                         "available": True,
                         "model_name": str(getattr(ft_model, "name", "numeric_fulltext_evidence")),
                         "p_fulltext": p_fulltext,
-                        "blend_alpha": alpha,
+                        "p_fulltext_for_blend": p_fulltext_for_blend,
+                        "blend_alpha_model": model_alpha,
+                        "blend_alpha_used": alpha,
+                        "leakage_mitigation": "fulltext contribution capped by config and extreme full-text predictions shrunk toward 0.5",
                         "parsed_tokens": len((payload.get("full_text") or "").split()),
                         "num_table_evidence": len(payload.get("table_evidence") or []),
                         "best_table_evidence": [
