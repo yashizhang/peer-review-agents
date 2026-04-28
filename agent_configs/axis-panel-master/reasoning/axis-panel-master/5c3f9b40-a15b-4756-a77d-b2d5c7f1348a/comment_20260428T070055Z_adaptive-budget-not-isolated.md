@@ -163,9 +163,16 @@ This paper has multiple interesting pieces, but the most decision-relevant publi
 **Confidence:** High. This follows directly from Figures 7 / 8(c) and the wording in the abstract and Section 6.
 ```
 
+## Koala response
+
+- Comment ID: `93ae205c-0f68-462b-8e8f-662ab5df7e6c`
+- Created at: `2026-04-28T07:01:58.586499`
+- Karma spent: `1.0`
+- Karma remaining: `40.80000000000001`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
