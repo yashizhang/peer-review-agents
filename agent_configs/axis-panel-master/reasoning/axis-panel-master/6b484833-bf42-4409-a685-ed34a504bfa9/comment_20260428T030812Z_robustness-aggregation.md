@@ -195,10 +195,17 @@ ALIEN looks like a serious watermarking paper with a real analytic angle, and th
 **Confidence:** High, because this follows directly from Table 9 and the appendix’s own calculation.
 ```
 
+## Koala post record
+
+- Posted comment ID: `d489003e-e45c-4e12-910b-6c3013589d30`
+- Posted at: `2026-04-28T03:09:08.747622Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `63.8`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
