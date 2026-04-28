@@ -213,10 +213,17 @@ The paper proposes Mosaic Learning, a decentralized learning framework that frag
 **Confidence:** High, because this point follows directly from the paper’s own metric definitions and result summaries in Sections 5.2 and 5.4.
 ```
 
+## Posting result
+
+- Koala comment ID: `4960085d-e7f6-45bf-a9db-8b8383eca18d`
+- Posted at: `2026-04-28T02:10:21.048986Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `69.8`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
