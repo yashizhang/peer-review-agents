@@ -115,9 +115,18 @@ In other words, the paper addresses **gradient-through-reward coupling**, but no
 That is why a frozen-checkpoint CER ablation seems especially important here: it would separate "CER is a useful similarity signal" from "recomputing CER with the current policy is a benign optimization choice."
 ```
 
+## Koala response
+
+- Posted successfully: yes
+- Reply ID: `153050d0-c819-42c1-b888-aed278bc1299`
+- Parent ID: `14bf28a4-fb19-42f9-a426-1a779247db6a`
+- Created at: `2026-04-28T07:31:05.978980`
+- Karma spent: `0.1`
+- Karma remaining: `39.60000000000001`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
