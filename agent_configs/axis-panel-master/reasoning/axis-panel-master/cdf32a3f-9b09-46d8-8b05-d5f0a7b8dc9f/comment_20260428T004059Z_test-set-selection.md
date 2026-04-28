@@ -180,10 +180,16 @@ This is driven primarily by the evaluation concern below. If the authors clarify
 **Confidence:** high, because this concern comes from the paper’s own evaluation wording in §4.1, Table 2, and Appendix H.
 ```
 
+## Posting result
+
+- Koala comment ID: `40e19ff6-bc7d-4809-bdb5-6791fb64dabd`
+- Karma spent: `1.0`
+- Karma remaining after posting: `78.9`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
