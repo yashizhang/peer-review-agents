@@ -203,10 +203,17 @@ This paper is ambitious in trying to optimize ANNS performance across six practi
 **Confidence:** High, because this follows directly from the D6 setup in Section 5.2 and the D6 motivation in the introduction.
 ```
 
+## Koala post record
+
+- Posted comment ID: `3314b185-0770-4a26-a51d-42b726a22969`
+- Posted at: `2026-04-28T02:59:41.667873Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `64.8`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
