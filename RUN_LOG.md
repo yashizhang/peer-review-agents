@@ -383,3 +383,169 @@ Log loss: 0.3147
 Top 27% precision: 0.8830
 Mean predicted accept: 0.5069
 ```
+
+## V7 Agentic LLM Zip Integration + 40-Paper Test
+
+Applied `peer-review-agents-xixian-agentic.zip` into the workspace, excluding
+`models/`, `data/`, `reasoning/`, `.venv/`, local API-key files, and
+`strategy_config.local.yaml` so local trained artifacts and secrets were not
+overwritten.
+
+Main code changes applied:
+
+- Added `koala_strategy.llm.agentic_reviewer`.
+- Added `koala_strategy.paper.parsed_payload`.
+- Updated scheduler/harness/preflight/provider paths for LLM-led triage,
+  comment writing, discussion synthesis, verdict writing, and self critique.
+- Added agentic LLM config block in `strategy_config.yaml`.
+- Added `tests/test_agentic_reviewer.py`.
+
+Validation:
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m koala_strategy.cli llm-judge-subset --limit 40 --selection balanced_uncertain --seed 42
+```
+
+Unit tests:
+
+```text
+28 passed
+```
+
+40-paper balanced-uncertain test subset:
+
+```text
+num_examples: 40
+accept/reject: 20 / 20
+model: gpt-5.4-mini
+fallback_count: 0
+predictions_csv: models/iclr26_v1/llm_judge/subset_balanced_uncertain_40.csv
+metrics_json: models/iclr26_v1/llm_judge/subset_balanced_uncertain_40_metrics.json
+```
+
+Metrics:
+
+```text
+base:
+  Pearson/Spearman: 0.0138 / -0.1583
+  AUROC/AUPRC: 0.4087 / 0.5233
+  Brier/log loss: 0.2540 / 0.7011
+  Top 27% precision: 0.4545
+
+LLM only:
+  Pearson/Spearman: 0.1302 / 0.1213
+  AUROC/AUPRC: 0.5700 / 0.5444
+  Brier/log loss: 0.2612 / 0.7169
+  Top 27% precision: 0.5455
+
+best log-loss blend, alpha=0.20:
+  Pearson/Spearman: 0.0342 / -0.0953
+  AUROC/AUPRC: 0.4450 / 0.5272
+  Brier/log loss: 0.2537 / 0.7005
+  Top 27% precision: 0.4545
+
+best top-slice fixed blend, alpha=0.40 or 0.50:
+  Top 27% precision: 0.6364
+```
+
+Interpretation:
+
+- LLM judge improved ranking on this deliberately hard balanced-uncertain
+  sample, especially AUROC and top-slice precision.
+- LLM probabilities were over-optimistic: mean LLM probability was 0.6299 for
+  accepted papers and 0.6167 for rejected papers, so LLM-only calibration was
+  worse than base.
+- LLM absolute error was better than base on 21/40 papers and worse on 19/40.
+- For production prediction, this supports using the LLM as a small-weight or
+  gated ranking/triage signal, not as an uncalibrated replacement probability.
+
+## V8 Prompt Iteration: Calibrated Domain + Contrastive Judge
+
+Goal: improve the LLM judge after observing that the first agentic prompt
+under-explained Koala context and produced over-optimistic probabilities.
+
+Changes:
+
+- Added `models.llm_judge_prompt_profile`.
+- Default prompt profile is now `contrastive_domain_v2`.
+- The judge prompt now explains Koala Science background, karma as a scarce
+  action budget, and why paper-specific evidence matters.
+- Added calibration anchors for accept probability: 0.50 is truly borderline,
+  0.45-0.55 should be common for mixed papers, >0.75 is rare, and movements
+  away from the non-LLM prior should usually be modest.
+- Added domain expert lenses for theory/optimization, NLP/LLM/generative,
+  vision/robotics/RL, graph, trustworthy ML, healthcare/science, and audio.
+- Added a contrastive rule: decide whether the accept case or reject case is
+  stronger before choosing the final probability; do not put every decent paper
+  in the 0.56-0.60 band.
+- Updated agentic triage/comment/verdict prompts with Koala background and
+  domain lenses while keeping the public text generalizable.
+- Updated `gated_llm_blend` so contrastive LLM judgments can be a lead signal
+  for hard boundary papers while still retaining prior mass.
+
+Validation:
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m koala_strategy.cli llm-judge-subset --limit 16 --selection balanced_uncertain --seed 42 --prompt-profile domain_calibrated_v2
+.venv/bin/python -m koala_strategy.cli llm-judge-subset --limit 16 --selection balanced_uncertain --seed 42 --prompt-profile contrastive_domain_v2
+.venv/bin/python -m koala_strategy.cli llm-judge-subset --limit 40 --selection balanced_uncertain --seed 42 --prompt-profile contrastive_domain_v2
+```
+
+Unit tests:
+
+```text
+28 passed
+```
+
+Prompt A/B on the same 16 balanced-uncertain papers:
+
+```text
+Base:
+  AUROC/AUPRC: 0.0781 / 0.3667
+  Brier/log loss: 0.2654 / 0.7241
+  Top 27% precision: 0.0000
+
+domain_calibrated_v2 LLM:
+  AUROC/AUPRC: 0.3750 / 0.4557
+  Brier/log loss: 0.2603 / 0.7142
+  Top 27% precision: 0.2500
+
+contrastive_domain_v2 LLM:
+  AUROC/AUPRC: 0.7031 / 0.6465
+  Brier/log loss: 0.2504 / 0.6939
+  Top 27% precision: 0.7500
+```
+
+Final 40-paper balanced-uncertain result with `contrastive_domain_v2`:
+
+```text
+Base:
+  Pearson/Spearman: 0.0138 / -0.1583
+  AUROC/AUPRC: 0.4087 / 0.5233
+  Brier/log loss: 0.2540 / 0.7011
+  Top 27% precision: 0.4545
+
+Old agentic LLM prompt:
+  Pearson/Spearman: 0.1302 / 0.1213
+  AUROC/AUPRC: 0.5700 / 0.5444
+  Brier/log loss: 0.2612 / 0.7169
+  Top 27% precision: 0.5455
+
+contrastive_domain_v2 LLM:
+  Pearson/Spearman: 0.2097 / 0.2730
+  AUROC/AUPRC: 0.6575 / 0.6777
+  Brier/log loss: 0.2475 / 0.6881
+  Top 27% precision: 0.6364
+```
+
+Interpretation:
+
+- Adding background/calibration alone improved calibration but compressed most
+  probabilities into a narrow 0.55-0.60 band.
+- The contrastive accept-vs-reject instruction restored useful ranking
+  separation while keeping probabilities less over-optimistic than the old
+  prompt.
+- On the 40 hard boundary papers, the contrastive prompt improved every major
+  metric over both base and the previous LLM prompt.

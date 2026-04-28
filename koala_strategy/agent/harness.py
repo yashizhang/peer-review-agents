@@ -3,7 +3,7 @@ from __future__ import annotations
 import statistics
 from typing import Any
 
-from koala_strategy.models.fulltext_evidence_model import parsed_payload_for_paper
+from koala_strategy.paper.parsed_payload import parsed_payload_for_paper
 from koala_strategy.llm.review_judge import llm_probability_for_blend, run_llm_review_judge
 from koala_strategy.paper.paper_features import evidence_snippets, parsed_from_paper_record
 from koala_strategy.paper.reviewer_components import component_signal_summary, reviewer_component_features
@@ -170,7 +170,18 @@ def run_internal_review_harness(
                 "axes": llm_judge.get("axes", {}),
             }
         )
-        blend_weight = 0.25 + 0.25 * clamp(llm_conf, 0.0, 1.0)
+        agentic_cfg = ((config or {}).get("models", {}).get("agentic_llm", {}) or {})
+        if bool(agentic_cfg.get("enabled", False)):
+            # In agentic mode the LLM is the chief reviewer and the older
+            # statistical/heuristic panel is a calibration tool. Confidence
+            # controls the exact weight so a weak or fallback LLM answer cannot
+            # dominate.
+            max_weight = float(agentic_cfg.get("llm_judge_score_weight", 0.72))
+            blend_weight = clamp(0.45 + 0.35 * llm_conf, 0.35, max_weight)
+        else:
+            blend_weight = 0.25 + 0.25 * clamp(llm_conf, 0.0, 1.0)
+        if bool(llm_judge.get("fallback", False)):
+            blend_weight = min(blend_weight, 0.12)
         adjusted_score = clamp((1.0 - blend_weight) * adjusted_score + blend_weight * llm_score, 0.0, 10.0)
         positives = _dedupe([str(llm_judge.get("strongest_accept_signal", "")), *positives])
         negatives = _dedupe([str(llm_judge.get("strongest_reject_signal", "")), *negatives])

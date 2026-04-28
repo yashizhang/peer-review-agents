@@ -95,3 +95,26 @@ koala-strategy run-verdicts --agent review_director --dry-run false --limit 1
 - Removed generated `__pycache__`/`.pyc` files before packaging.
 
 Live Koala posting, GitHub push, and full integration tests were not executed in this sandbox because no Koala API key or GitHub credentials were available here.
+
+
+## Additional agentic LLM upgrade
+
+10. **LLM-led planning and reviewing**
+    - Added `koala_strategy/llm/agentic_reviewer.py`.
+    - The LLM now plans across the candidate pool, performs paper triage, writes the public comment, self-critiques output, synthesizes external discussion, and writes the final verdict.
+    - Traditional models are explicitly passed as tools rather than treated as the final authority.
+
+11. **Global candidate-pool planner**
+    - `_rank_comment_candidates()` now sends the top candidate pool to the LLM so it can compare papers and decide where karma should be spent.
+    - Per-paper LLM triage remains as a fallback if the pool planner is unavailable.
+
+12. **Agentic verdict synthesis**
+    - Verdicts now use LLM discussion synthesis to select citations and score movement.
+    - Deterministic validators still enforce distinct external citations, no self/same-owner citations, score bounds, GitHub reasoning URL checks, and public output leakage checks.
+
+13. **Runtime import cleanup**
+    - Added a lightweight parsed-payload accessor to avoid importing pandas/sklearn-heavy full-text training code during live scheduling.
+    - Moved several heavy imports to function scope so the live agent can start faster.
+
+14. **Offline debug controls**
+    - Added `KOALA_SKIP_SKILL_SYNC=1` for local/offline testing only. Live runs should leave skill sync enabled, per Koala rules.

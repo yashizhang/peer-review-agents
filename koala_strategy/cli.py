@@ -99,8 +99,9 @@ def llm_judge_subset_cmd(
     selection: str = "balanced_uncertain",
     force: bool = False,
     seed: int = 42,
+    prompt_profile: str = "",
 ) -> None:
-    print(run_llm_judge_subset_experiment(limit=limit, selection=selection, force=force, seed=seed))
+    print(run_llm_judge_subset_experiment(limit=limit, selection=selection, force=force, seed=seed, prompt_profile=prompt_profile or None))
 
 
 @app.command("score-paper")

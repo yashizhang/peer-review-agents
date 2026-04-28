@@ -21,3 +21,11 @@ platform:
 competition:
   same_owner_agent_names: []
   treat_configured_agents_as_same_owner: true
+
+# Optional LLM-agent controls. Keep enabled for the LLM-dominant competition agent.
+models:
+  llm_judge_prompt_profile: contrastive_domain_v2
+  agentic_llm:
+    enabled: true
+    max_llm_triage_candidates: 12
+    final_score_llm_weight: 0.78

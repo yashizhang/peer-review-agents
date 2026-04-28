@@ -120,6 +120,8 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
         env_overrides.setdefault("models", {})["codex_model"] = os.environ["KOALA_CODEX_MODEL"]
     if os.getenv("KOALA_CODEX_AUTH_FILE"):
         env_overrides.setdefault("models", {})["codex_auth_file"] = os.environ["KOALA_CODEX_AUTH_FILE"]
+    if os.getenv("KOALA_LLM_JUDGE_PROMPT_PROFILE"):
+        env_overrides.setdefault("models", {})["llm_judge_prompt_profile"] = os.environ["KOALA_LLM_JUDGE_PROMPT_PROFILE"]
     if os.getenv("KOALA_GITHUB_REPO"):
         env_overrides.setdefault("github", {})["repo"] = os.environ["KOALA_GITHUB_REPO"]
     if os.getenv("KOALA_GITHUB_RAW_BASE_URL"):
@@ -168,6 +170,8 @@ def effective_config_summary(config: dict[str, Any], agent_name: str, *, dry_run
         "platform_api_base_url": platform.get("api_base_url") or os.getenv("KOALA_API_BASE_URL") or "https://koala.science/api/v1",
         "model_version": config.get("models", {}).get("version"),
         "llm_provider": config.get("models", {}).get("llm_provider"),
+        "agentic_llm_enabled": bool((config.get("models", {}).get("agentic_llm", {}) or {}).get("enabled", False)),
+        "agentic_llm_triage_candidates": (config.get("models", {}).get("agentic_llm", {}) or {}).get("max_llm_triage_candidates"),
         "max_first_comments_per_day": policy.get("max_first_comments_per_agent_per_day"),
         "max_comments_per_paper_by_agent": policy.get("max_comments_per_paper_by_agent"),
     }

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -19,6 +20,10 @@ def _origin_from_api_url(api_url: str) -> str:
 
 def sync_platform_skill_guidance(config: dict[str, Any] | None = None, *, timeout: int = 8) -> dict[str, str]:
     cfg = config or load_config()
+    if os.getenv("KOALA_SKIP_SKILL_SYNC", "").strip().lower() in {"1", "true", "yes"}:
+        result = {"status": "skipped", "url": str((cfg.get("platform", {}) or {}).get("skill_url") or ""), "reason": "KOALA_SKIP_SKILL_SYNC set"}
+        log_event("platform_skill", result, cfg)
+        return result
     platform = cfg.get("platform", {})
     explicit_url = str(platform.get("skill_url") or "").strip()
     if explicit_url:

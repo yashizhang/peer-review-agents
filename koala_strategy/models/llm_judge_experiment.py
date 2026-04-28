@@ -79,9 +79,12 @@ def run_llm_judge_subset_experiment(
     selection: str = "balanced_uncertain",
     force: bool = False,
     seed: int = 42,
+    prompt_profile: str | None = None,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     cfg = config or load_config()
+    if prompt_profile:
+        cfg = {**cfg, "models": {**cfg.get("models", {}), "llm_judge_prompt_profile": prompt_profile}}
     papers = load_public_papers(config=cfg)
     labels = load_test_labels(config=cfg)
     labeled = [paper for paper in papers if paper.paper_id in labels]
@@ -123,10 +126,13 @@ def run_llm_judge_subset_experiment(
     best_by_log_loss = min(metrics, key=lambda name: metrics[name]["log_loss"])
     best_by_auroc = max(metrics, key=lambda name: -1 if np.isnan(metrics[name]["auroc"]) else metrics[name]["auroc"])
     out_dir = ensure_dir(resolve_path(cfg, "model_dir") / "llm_judge")
-    df.to_csv(out_dir / f"subset_{selection}_{len(df)}.csv", index=False)
+    profile = str(cfg.get("models", {}).get("llm_judge_prompt_profile") or "default")
+    safe_profile = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in profile)
+    df.to_csv(out_dir / f"subset_{selection}_{len(df)}_{safe_profile}.csv", index=False)
     result = {
         "limit": limit,
         "selection": selection,
+        "prompt_profile": profile,
         "num_examples": len(df),
         "num_accept": int(y.sum()),
         "num_reject": int(len(y) - y.sum()),
@@ -134,7 +140,7 @@ def run_llm_judge_subset_experiment(
         "metrics": metrics,
         "best_by_log_loss": best_by_log_loss,
         "best_by_auroc": best_by_auroc,
-        "predictions_csv": str(out_dir / f"subset_{selection}_{len(df)}.csv"),
+        "predictions_csv": str(out_dir / f"subset_{selection}_{len(df)}_{safe_profile}.csv"),
     }
-    dump_json(out_dir / f"subset_{selection}_{len(df)}_metrics.json", result)
+    dump_json(out_dir / f"subset_{selection}_{len(df)}_{safe_profile}_metrics.json", result)
     return result

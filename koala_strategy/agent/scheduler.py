@@ -15,6 +15,15 @@ from koala_strategy.config import effective_config_summary, get_agent_config, lo
 from koala_strategy.data.iclr_loader import load_public_papers
 from koala_strategy.data.koala_cache import KoalaCache
 from koala_strategy.llm.comment_polisher import polish_comment_draft
+from koala_strategy.llm.agentic_reviewer import (
+    agentic_llm_enabled,
+    compose_llm_public_comment,
+    prepare_agentic_verdict,
+    run_llm_candidate_pool_planner,
+    run_llm_paper_triage,
+    self_critique_public_output,
+    synthesize_discussion_with_llm,
+)
 from koala_strategy.logging_utils import log_event
 from koala_strategy.models.export_bundle import generate_prediction_bundle
 from koala_strategy.models.predict_discussion import update_with_discussion
@@ -22,7 +31,7 @@ from koala_strategy.models.predict_paper_only import load_model_artifacts
 from koala_strategy.platform.koala_client import KoalaClient
 from koala_strategy.platform.notifications import deliberating_paper_ids, sync_notifications
 from koala_strategy.platform.skill_sync import sync_platform_skill_guidance
-from koala_strategy.schemas import CommentRecord, PaperRecord, PredictionBundle
+from koala_strategy.schemas import CommentRecord, PaperRecord, PredictionBundle, VerdictDraft
 
 
 def _find_public_paper(paper_id: str) -> PaperRecord:
@@ -98,6 +107,7 @@ def process_comment_for_paper(
     artifacts: dict[str, Any] | None = None,
     prediction: PredictionBundle | None = None,
     existing_comments: list[CommentRecord] | None = None,
+    llm_triage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     cfg = config or load_config()
     validate_runtime_config(cfg, agent_name, dry_run=dry_run)
@@ -106,8 +116,14 @@ def process_comment_for_paper(
     artifacts = artifacts or load_model_artifacts(cfg)
     bundle = prediction or generate_prediction_bundle(paper, artifacts, cfg, save=True)
     harness = run_internal_review_harness(paper, bundle, agent_name, config=cfg)
-    content, evidence = write_comment(paper, bundle, agent_name, harness_context=harness)
-    content = polish_comment_draft(paper, content, evidence, cfg)
+    if agentic_llm_enabled(cfg):
+        content, evidence = compose_llm_public_comment(paper, bundle, harness, llm_triage, agent_name, cfg)
+        critique = self_critique_public_output("comment", paper, content, evidence, cfg)
+        content = str(critique.get("revised_markdown") or content)
+        evidence["self_critique"] = {k: v for k, v in critique.items() if k != "revised_markdown"}
+    else:
+        content, evidence = write_comment(paper, bundle, agent_name, harness_context=harness)
+        content = polish_comment_draft(paper, content, evidence, cfg)
 
     ok, reason = _guard_public_content(content)
     if not ok:
@@ -227,20 +243,49 @@ def dry_run_verdict(paper_id: str, agent_name: str, config: dict[str, Any] | Non
     harness = run_internal_review_harness(paper, bundle, agent_name, config=cfg)
     comments = mock_external_comments(paper_id)
     discussion_update = update_with_discussion(paper, comments, artifacts)
-    draft = prepare_verdict(
-        paper,
-        bundle,
-        comments,
-        agent_name,
-        same_owner_agent_names=set(),
-        discussion_update=discussion_update,
-        harness_context=harness,
-        min_comment_quality=float(cfg.get("online_policy", {}).get("min_comment_quality_to_cite", 0.0)),
-    )
+    min_quality = float(cfg.get("online_policy", {}).get("min_comment_quality_to_cite", 0.0))
+    min_citations = int(cfg.get("competition", {}).get("min_external_citations_for_verdict", 3))
+    if agentic_llm_enabled(cfg):
+        discussion_synthesis = synthesize_discussion_with_llm(
+            paper,
+            bundle,
+            comments,
+            agent_name,
+            set(),
+            discussion_update,
+            harness,
+            cfg,
+            min_comment_quality=min_quality,
+            min_citations=min_citations,
+        )
+        draft = prepare_agentic_verdict(
+            paper,
+            bundle,
+            comments,
+            agent_name,
+            set(),
+            discussion_update,
+            discussion_synthesis,
+            harness,
+            cfg,
+        )
+    else:
+        discussion_synthesis = None
+        draft = prepare_verdict(
+            paper,
+            bundle,
+            comments,
+            agent_name,
+            same_owner_agent_names=set(),
+            discussion_update=discussion_update,
+            harness_context=harness,
+            min_comment_quality=min_quality,
+        )
     evidence = {
         "positive_summary": bundle.paper_only.get("main_positive_evidence", []),
         "negative_summary": bundle.paper_only.get("main_negative_evidence", []),
         "discussion_summary": discussion_update,
+        "llm_discussion_synthesis": discussion_synthesis,
         "harness_context": harness,
         "citation_ids": draft.citation_ids,
     }
@@ -301,16 +346,51 @@ def process_verdict_for_paper(
         log_event("verdicts", {"agent_name": agent_name, "paper_id": paper.paper_id, "dry_run": dry_run, "result": "blocked", "error": reason}, cfg)
         return {"paper_id": paper.paper_id, "ok": False, "reason": reason}
     discussion_update = update_with_discussion(paper, comments, artifacts)
-    draft = prepare_verdict(
-        paper,
-        bundle,
-        comments,
-        agent_name,
-        same_owner_agent_names=same_owner_agent_names,
-        discussion_update=discussion_update,
-        harness_context=harness,
-        min_comment_quality=min_quality,
-    )
+    discussion_synthesis = None
+    if agentic_llm_enabled(cfg):
+        discussion_synthesis = synthesize_discussion_with_llm(
+            paper,
+            bundle,
+            comments,
+            agent_name,
+            same_owner_agent_names,
+            discussion_update,
+            harness,
+            cfg,
+            min_comment_quality=min_quality,
+            min_citations=int(cfg.get("competition", {}).get("min_external_citations_for_verdict", 3)),
+        )
+        draft = prepare_agentic_verdict(
+            paper,
+            bundle,
+            comments,
+            agent_name,
+            same_owner_agent_names,
+            discussion_update,
+            discussion_synthesis,
+            harness,
+            cfg,
+        )
+        critique = self_critique_public_output(
+            "verdict",
+            paper,
+            draft.verdict_markdown,
+            {"discussion_synthesis": discussion_synthesis, "harness_context": harness},
+            cfg,
+            required_comment_refs=draft.citation_ids,
+        )
+        draft = VerdictDraft(score=draft.score, verdict_markdown=str(critique.get("revised_markdown") or draft.verdict_markdown), citation_ids=draft.citation_ids)
+    else:
+        draft = prepare_verdict(
+            paper,
+            bundle,
+            comments,
+            agent_name,
+            same_owner_agent_names=same_owner_agent_names,
+            discussion_update=discussion_update,
+            harness_context=harness,
+            min_comment_quality=min_quality,
+        )
     ok, reason = _guard_public_content(draft.verdict_markdown)
     if not ok:
         log_event("verdicts", {"agent_name": agent_name, "paper_id": paper.paper_id, "dry_run": dry_run, "result": "blocked", "error": reason}, cfg)
@@ -319,6 +399,7 @@ def process_verdict_for_paper(
         "positive_summary": bundle.paper_only.get("main_positive_evidence", []),
         "negative_summary": bundle.paper_only.get("main_negative_evidence", []),
         "discussion_summary": discussion_update,
+        "llm_discussion_synthesis": discussion_synthesis,
         "harness_context": harness,
         "citation_ids": draft.citation_ids,
     }
@@ -403,6 +484,54 @@ def _rank_comment_candidates(
         except Exception as exc:  # noqa: BLE001
             log_event("errors", {"agent_name": agent_name, "paper_id": paper.paper_id, "stage": "paper_selection", "error": str(exc)}, cfg)
     ranked.sort(key=lambda row: float(row["utility"]), reverse=True)
+    if agentic_llm_enabled(cfg) and bool((cfg.get("models", {}).get("agentic_llm", {}) or {}).get("triage_enabled", True)) and ranked:
+        llm_limit = int((cfg.get("models", {}).get("agentic_llm", {}) or {}).get("max_llm_triage_candidates", 12))
+        triaged: list[dict[str, Any]] = []
+        untriaged = ranked[llm_limit:]
+        pool_rows = ranked[:llm_limit]
+        pool_plans: dict[str, dict[str, Any]] = {}
+        try:
+            pool_plans = run_llm_candidate_pool_planner(pool_rows, agent_name, cfg)
+        except Exception as exc:  # noqa: BLE001
+            log_event("errors", {"agent_name": agent_name, "stage": "llm_candidate_pool_planner", "error": str(exc)}, cfg)
+        for row in pool_rows:
+            paper = row["paper"]
+            try:
+                triage = pool_plans.get(paper.paper_id)
+                if triage is None:
+                    triage = run_llm_paper_triage(paper, row["prediction"], row.get("comments", []), agent_name, float(row["utility"]), cfg)
+                row["llm_triage"] = triage
+                row["utility"] = float(triage.get("adjusted_utility", row["utility"]))
+                selected = bool(triage.get("should_comment", True)) and float(triage.get("risk_of_generic_comment", 0.0)) < 0.88
+                log_event(
+                    "paper_selection",
+                    {
+                        "agent_name": agent_name,
+                        "paper_id": paper.paper_id,
+                        "stage": "llm_triage",
+                        "selected": selected,
+                        "base_utility": triage.get("base_utility"),
+                        "adjusted_utility": triage.get("adjusted_utility"),
+                        "comment_angle": triage.get("comment_angle"),
+                        "risk_of_generic_comment": triage.get("risk_of_generic_comment"),
+                        "pool_planner_strategy": triage.get("pool_planner_strategy"),
+                        "fallback": triage.get("fallback", False) or triage.get("pool_planner_fallback", False),
+                    },
+                    cfg,
+                )
+                if selected:
+                    triaged.append(row)
+            except Exception as exc:  # noqa: BLE001
+                log_event("errors", {"agent_name": agent_name, "paper_id": paper.paper_id, "stage": "llm_triage", "error": str(exc)}, cfg)
+                triaged.append(row)
+        # LLM-triaged candidates are the priority pool; keep non-triaged items as a
+        # fallback only when the LLM pool is too small.
+        triaged.sort(key=lambda row: float(row["utility"]), reverse=True)
+        if len(triaged) >= 1:
+            ranked = triaged + untriaged
+        else:
+            ranked = ranked[: max(1, min(len(ranked), llm_limit))]
+    ranked.sort(key=lambda row: float(row["utility"]), reverse=True)
     return ranked
 
 
@@ -437,6 +566,7 @@ def run_agent_once(agent_name: str, dry_run: bool | None = None, limit: int = 5)
                     artifacts=artifacts,
                     prediction=row.get("prediction"),
                     existing_comments=row.get("comments"),
+                    llm_triage=row.get("llm_triage"),
                 )
             )
         except Exception as exc:  # noqa: BLE001

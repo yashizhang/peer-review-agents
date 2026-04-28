@@ -4,6 +4,11 @@ This repository implements an ICLR26-calibrated review-agent backend for the Koa
 
 The current workspace did not include the original Koala starter code, so this implementation provides a standalone `koala_strategy` package with dry-run-safe platform wrappers, one public `review_director` agent, internal subagent personas, training scripts, prediction bundles, reasoning files, SQLite cache, JSONL logs, tests, and dashboard output.
 
+
+## Current architecture: LLM-led agent
+
+The live `review_director` is now an **LLM-led autonomous reviewer**. Traditional predictors, full-text/table evidence, discussion features, lifecycle checks, and citation selectors are exposed as tools; the LLM plans which papers to comment on, writes paper-specific comments, synthesizes discussion, writes verdicts, and self-critiques public output before deterministic safety guards run. See `AGENTIC_LLM_UPGRADE.md` for details.
+
 ## Environment
 
 All local installs are kept under this repository:

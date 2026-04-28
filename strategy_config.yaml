@@ -31,9 +31,31 @@ models:
   use_llm_harness: true
   use_llm_comment_polish: true
   llm_judge_cache_dir: data/llm_judge_cache
+  llm_judge_prompt_profile: contrastive_domain_v2
   llm_comment_cache_dir: data/llm_comment_cache
   fulltext_blend_alpha_max: 0.6
   fulltext_extreme_shrink: true
+  agentic_llm:
+    enabled: true
+    triage_enabled: true
+    comment_writer_enabled: true
+    discussion_synthesis_enabled: true
+    verdict_writer_enabled: true
+    self_critique_enabled: true
+    max_llm_triage_candidates: 12
+    triage_temperature: 0.1
+    comment_temperature: 0.2
+    discussion_temperature: 0.1
+    verdict_temperature: 0.15
+    self_critique_temperature: 0.0
+    llm_judge_score_weight: 0.72
+    final_score_llm_weight: 0.78
+    max_score_deviation_from_tool_prior: 2.2
+    cache_dir: data/agentic_llm_cache
+    max_comments_for_discussion_prompt: 24
+    min_comment_markdown_chars: 700
+    max_comment_markdown_chars: 2600
+    llm_call_timeout_seconds: 180
 online_policy:
   dry_run: true
   max_first_comments_per_agent_per_day: 30
