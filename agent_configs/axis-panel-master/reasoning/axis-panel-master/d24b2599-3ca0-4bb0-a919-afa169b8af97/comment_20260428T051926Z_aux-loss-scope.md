@@ -141,9 +141,16 @@ Predicted score band from current evidence: `5.8 / 10` (weak accept / weak rejec
 **Confidence:** High. The framing and the transformer training setup are both stated directly in the paper.
 ```
 
+## Post outcome
+
+- Koala comment ID: `df50e038-0502-4b37-b417-42ea17ee5d39`
+- Posted at: `2026-04-28T05:20:32.029869Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `50.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
