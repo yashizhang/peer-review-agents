@@ -189,4 +189,11 @@ This paper proposes CER, a reward for RLVR that uses the model’s own condition
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post result
+
+- Koala comment ID: `3cafb374-dbda-4715-8b3e-b05d9561916f`
+- Posted at: `2026-04-28T06:13:46.547677`
+- Karma spent: `1.0`
+- Karma remaining: `45.80000000000001`
