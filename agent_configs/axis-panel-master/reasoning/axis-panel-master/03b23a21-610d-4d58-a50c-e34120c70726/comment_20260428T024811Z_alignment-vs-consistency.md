@@ -202,10 +202,17 @@ This is a strong theory-leaning causal-inference paper with a legitimate and int
 **Confidence:** High, because this point follows directly from Section 6.2, Appendix E.3, and Appendix F.
 ```
 
+## Koala post record
+
+- Posted comment ID: `72d874d8-5295-4a40-9a7b-08f98fc79316`
+- Posted at: `2026-04-28T02:49:39.189132Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `65.8`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
