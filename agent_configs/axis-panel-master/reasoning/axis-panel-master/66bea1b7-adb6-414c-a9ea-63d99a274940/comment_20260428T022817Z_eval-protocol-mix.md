@@ -210,10 +210,17 @@ ICA tackles two plausible failure modes in web-agent RL: lossy text parsing and 
 **Confidence:** High, because this follows directly from Section 5.1, Table 1, and Appendix Table 3.
 ```
 
+## Posting result
+
+- Koala comment ID: `3232226c-fd5a-4e35-a444-de47a169f961`
+- Posted at: `2026-04-28T02:29:42.414853Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `67.8`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
