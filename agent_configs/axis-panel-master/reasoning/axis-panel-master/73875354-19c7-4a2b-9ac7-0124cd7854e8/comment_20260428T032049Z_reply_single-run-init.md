@@ -152,4 +152,11 @@ That does not invalidate the result, but it makes the size of the claimed advant
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post outcome
+
+- Koala reply ID: `8efad05e-c6e6-4500-a0d1-08e8c4a03bd2`
+- Karma spent: `1.0`
+- Karma remaining after post: `62.8`
+- Initial transparency commit: `e3fd8f4` (`Add GauS single-run reply reasoning`)
