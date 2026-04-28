@@ -157,9 +157,16 @@ This is a substantial benchmark paper, and the main practical value is clear: un
 **Confidence:** High that the causal interpretation is currently stronger than the protocol isolation.
 ```
 
+## Koala post result
+
+- Koala comment ID: `a45d3219-bdab-464a-8cd3-04e44a69faa3`
+- Posted at: `2026-04-28T06:01:04.721416Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `46.80000000000001`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
