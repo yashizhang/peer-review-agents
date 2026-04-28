@@ -1,0 +1,7 @@
+{
+  "name": "review_director",
+  "provider": "codex",
+  "model": "gpt-5.4-mini",
+  "codex_auth_file": "",
+  "strategy_config": "../../strategy_config.yaml"
+}

@@ -1,0 +1,101 @@
+{
+  "auprc": 0.6356905945367225,
+  "auroc": 0.6851228938211442,
+  "brier": 0.20386140642115255,
+  "calibration_bins": [
+    {
+      "count": 9,
+      "empirical_accept": 0.2222222222222222,
+      "hi": 0.1,
+      "lo": 0.0,
+      "mean_pred": 0.058778094407879955
+    },
+    {
+      "count": 833,
+      "empirical_accept": 0.17046818727490998,
+      "hi": 0.2,
+      "lo": 0.1,
+      "mean_pred": 0.1715468614493014
+    },
+    {
+      "count": 3662,
+      "empirical_accept": 0.2607864554888039,
+      "hi": 0.30000000000000004,
+      "lo": 0.2,
+      "mean_pred": 0.2554675744239894
+    },
+    {
+      "count": 4396,
+      "empirical_accept": 0.353958143767061,
+      "hi": 0.4,
+      "lo": 0.30000000000000004,
+      "mean_pred": 0.3482767965990069
+    },
+    {
+      "count": 2600,
+      "empirical_accept": 0.42538461538461536,
+      "hi": 0.5,
+      "lo": 0.4,
+      "mean_pred": 0.44226774891145343
+    },
+    {
+      "count": 688,
+      "empirical_accept": 0.5305232558139535,
+      "hi": 0.6000000000000001,
+      "lo": 0.5,
+      "mean_pred": 0.5379440649063748
+    },
+    {
+      "count": 210,
+      "empirical_accept": 0.6476190476190476,
+      "hi": 0.7000000000000001,
+      "lo": 0.6000000000000001,
+      "mean_pred": 0.6415300634322432
+    },
+    {
+      "count": 36,
+      "empirical_accept": 0.7222222222222222,
+      "hi": 0.8,
+      "lo": 0.7000000000000001,
+      "mean_pred": 0.7321270862154123
+    },
+    {
+      "count": 43,
+      "empirical_accept": 0.9069767441860465,
+      "hi": 0.9,
+      "lo": 0.8,
+      "mean_pred": 0.8527847306420628
+    },
+    {
+      "count": 901,
+      "empirical_accept": 0.9544950055493896,
+      "hi": 1.0,
+      "lo": 0.9,
+      "mean_pred": 0.95342772900598
+    }
+  ],
+  "coefficients": {
+    "clarity_concern_score": -0.025021275949549567,
+    "comment_quality_max": 0.025679011729336794,
+    "comment_quality_mean": -0.27196599324629916,
+    "independent_fatal_flaw_agreement": 0.03891783566206581,
+    "independent_positive_agreement": -0.022480090280559452,
+    "max_fatal_flaw_severity": -0.09799121772628336,
+    "mean_fatal_flaw_severity": -0.04063323482808685,
+    "missing_baseline_concern_score": 0.056865870531840064,
+    "mixed_claim_count": -0.11756254218424746,
+    "negative_claim_count": -0.2156537263797129,
+    "novelty_concern_score": -0.1405285206739212,
+    "novelty_support_score": -0.09997347995401526,
+    "num_citable_comments": 0.1954206912629424,
+    "num_distinct_external_agents": 0.028716886462134158,
+    "paper_prior_logit": 1.0530236515192226,
+    "positive_claim_count": 0.00456475575922895,
+    "reproducibility_concern_score": 0.006119313742039541,
+    "review_confidence_mean": 0.0,
+    "review_disagreement": 0.008796827819532302,
+    "theory_concern_score": 0.027714953665475536
+  },
+  "log_loss": 0.5910939838885679,
+  "top_27_percent_precision": 0.6054817275747508
+}

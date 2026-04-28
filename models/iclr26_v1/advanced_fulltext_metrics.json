@@ -1,0 +1,238 @@
+{
+  "base": {
+    "auprc": 0.6602083534015032,
+    "auroc": 0.6823595348185512,
+    "brier": 0.2242294262536985,
+    "log_loss": 0.6359713274699005,
+    "mean_pred": 0.4201718096011687,
+    "pearson": 0.323085516358262,
+    "spearman": 0.3161250173173248,
+    "top_27_percent_precision": 0.717391304347826
+  },
+  "meta_stack": {
+    "blend": {
+      "auprc": 0.9992072259850664,
+      "auroc": 0.999334454252487,
+      "brier": 0.013626217535511983,
+      "log_loss": 0.053573379556978794,
+      "mean_pred": 0.48236576278580845,
+      "pearson": 0.9732360032192866,
+      "spearman": 0.8621288768808372,
+      "top_27_percent_precision": 1.0
+    },
+    "blend_alpha_by_train_oof_logloss": 1.0,
+    "coefficients": {
+      "base": 0.3786453777487907,
+      "evidence_logreg_num": -0.0335876900037721,
+      "full_sgd_num": 0.13021588920925872,
+      "sections_logreg_num": 1.0109391599818807,
+      "sections_logreg_text": 4.456771175530632,
+      "tables_logreg_num": -0.8931024582769967
+    },
+    "intercept": 0.16495788815732593,
+    "model_names": [
+      "base",
+      "sections_logreg_num",
+      "sections_logreg_text",
+      "tables_logreg_num",
+      "evidence_logreg_num",
+      "full_sgd_num"
+    ],
+    "pure": {
+      "auprc": 0.9992072259850664,
+      "auroc": 0.999334454252487,
+      "brier": 0.013626217535511983,
+      "log_loss": 0.053573379556978794,
+      "mean_pred": 0.48236576278580845,
+      "pearson": 0.9732360032192866,
+      "spearman": 0.8621288768808372,
+      "top_27_percent_precision": 1.0
+    },
+    "train_blend_log_loss": 0.05143960743601443,
+    "train_oof": {
+      "auprc": 0.9960187830059186,
+      "auroc": 0.9979058561897701,
+      "brier": 0.010468092572963762,
+      "log_loss": 0.05143960743601443,
+      "mean_pred": 0.4062195109372663,
+      "pearson": 0.9784223555726657,
+      "spearman": 0.8452705300927663,
+      "top_27_percent_precision": 0.99609375
+    }
+  },
+  "models": {
+    "evidence_logreg_num": {
+      "blend": {
+        "auprc": 0.7996056044984059,
+        "auroc": 0.8223343141375928,
+        "brier": 0.17760082656926277,
+        "log_loss": 0.5503907989969057,
+        "mean_pred": 0.5201670082908654,
+        "pearson": 0.5543613857731836,
+        "spearman": 0.5565282304494887,
+        "top_27_percent_precision": 0.8043478260869565
+      },
+      "blend_alpha_by_train_oof_logloss": 0.9750000000000001,
+      "pure": {
+        "auprc": 0.8011779276846243,
+        "auroc": 0.8228597449908925,
+        "brier": 0.1782984351164393,
+        "log_loss": 0.5602817362252964,
+        "mean_pred": 0.5227309877444472,
+        "pearson": 0.5547333934332286,
+        "spearman": 0.5574354162196195,
+        "top_27_percent_precision": 0.8043478260869565
+      },
+      "train_blend_log_loss": 0.3531266313183258,
+      "train_oof": {
+        "auprc": 0.9033478744516055,
+        "auroc": 0.9215344699777613,
+        "brier": 0.10542847771588058,
+        "log_loss": 0.3533365533604952,
+        "mean_pred": 0.43987392346982485,
+        "pearson": 0.7549526681062728,
+        "spearman": 0.715618546078463,
+        "top_27_percent_precision": 0.92578125
+      }
+    },
+    "full_sgd_num": {
+      "blend": {
+        "auprc": 0.8488706498293247,
+        "auroc": 0.9077168277987949,
+        "brier": 0.08275325512557524,
+        "log_loss": 0.3100891290824467,
+        "mean_pred": 0.48048546753003024,
+        "pearson": 0.8183554488295668,
+        "spearman": 0.704397255855079,
+        "top_27_percent_precision": 0.8586956521739131
+      },
+      "blend_alpha_by_train_oof_logloss": 0.8250000000000001,
+      "pure": {
+        "auprc": 0.8984028281067952,
+        "auroc": 0.9429206949698754,
+        "brier": 0.08989065725244666,
+        "log_loss": 0.9968313132569103,
+        "mean_pred": 0.4932792837269755,
+        "pearson": 0.8213907321862948,
+        "spearman": 0.8437589681258629,
+        "top_27_percent_precision": 0.9239130434782609
+      },
+      "train_blend_log_loss": 0.25111822504318443,
+      "train_oof": {
+        "auprc": 0.9096621141644693,
+        "auroc": 0.945932171979244,
+        "brier": 0.06846257668515614,
+        "log_loss": 0.806253194489447,
+        "mean_pred": 0.38489324805937836,
+        "pearson": 0.85674041613146,
+        "spearman": 0.8737870674245578,
+        "top_27_percent_precision": 0.94921875
+      }
+    },
+    "sections_logreg_num": {
+      "blend": {
+        "auprc": 0.849626016450128,
+        "auroc": 0.8752977441502031,
+        "brier": 0.1475837821234249,
+        "log_loss": 0.47017774794327044,
+        "mean_pred": 0.5166719083507034,
+        "pearson": 0.6473221032476204,
+        "spearman": 0.6479725560786593,
+        "top_27_percent_precision": 0.8369565217391305
+      },
+      "blend_alpha_by_train_oof_logloss": 1.0,
+      "pure": {
+        "auprc": 0.849626016450128,
+        "auroc": 0.8752977441502031,
+        "brier": 0.1475837821234249,
+        "log_loss": 0.47017774794327044,
+        "mean_pred": 0.5166719083507034,
+        "pearson": 0.6473221032476204,
+        "spearman": 0.6479725560786593,
+        "top_27_percent_precision": 0.8369565217391305
+      },
+      "train_blend_log_loss": 0.30677722654781736,
+      "train_oof": {
+        "auprc": 0.9297006174882909,
+        "auroc": 0.9460850630096368,
+        "brier": 0.08837625754708754,
+        "log_loss": 0.30677722654781736,
+        "mean_pred": 0.4335591006139389,
+        "pearson": 0.8026975865889925,
+        "spearman": 0.7572968925533352,
+        "top_27_percent_precision": 0.9609375
+      }
+    },
+    "sections_logreg_text": {
+      "blend": {
+        "auprc": 0.9999591703413359,
+        "auroc": 0.9999649712764467,
+        "brier": 0.10125444525555229,
+        "log_loss": 0.37738377643511184,
+        "mean_pred": 0.4824416249416091,
+        "pearson": 0.9396605477484992,
+        "spearman": 0.863217499804994,
+        "top_27_percent_precision": 1.0
+      },
+      "blend_alpha_by_train_oof_logloss": 1.0,
+      "pure": {
+        "auprc": 0.9999591703413359,
+        "auroc": 0.9999649712764467,
+        "brier": 0.10125444525555229,
+        "log_loss": 0.37738377643511184,
+        "mean_pred": 0.4824416249416091,
+        "pearson": 0.9396605477484992,
+        "spearman": 0.863217499804994,
+        "top_27_percent_precision": 1.0
+      },
+      "train_blend_log_loss": 0.4090440174614363,
+      "train_oof": {
+        "auprc": 0.9953240733397086,
+        "auroc": 0.9972247961452928,
+        "brier": 0.11491535090633932,
+        "log_loss": 0.4090440174614363,
+        "mean_pred": 0.45570152745583636,
+        "pearson": 0.9239075316980021,
+        "spearman": 0.8441143276145996,
+        "top_27_percent_precision": 0.99609375
+      }
+    },
+    "tables_logreg_num": {
+      "blend": {
+        "auprc": 0.7786340518641532,
+        "auroc": 0.799250385315959,
+        "brier": 0.19146812334063879,
+        "log_loss": 0.5887666156163475,
+        "mean_pred": 0.5221588464541476,
+        "pearson": 0.5116688317243883,
+        "spearman": 0.5166725356150819,
+        "top_27_percent_precision": 0.7934782608695652
+      },
+      "blend_alpha_by_train_oof_logloss": 0.9750000000000001,
+      "pure": {
+        "auprc": 0.7803876633731022,
+        "auroc": 0.7994955863808323,
+        "brier": 0.1925200143723485,
+        "log_loss": 0.6021117268264814,
+        "mean_pred": 0.524773898681147,
+        "pearson": 0.5117009845031724,
+        "spearman": 0.5170958889744761,
+        "top_27_percent_precision": 0.7934782608695652
+      },
+      "train_blend_log_loss": 0.3730056082952509,
+      "train_oof": {
+        "auprc": 0.890625934378193,
+        "auroc": 0.9095858042994812,
+        "brier": 0.11246143137034523,
+        "log_loss": 0.3746317493440566,
+        "mean_pred": 0.4419128584269381,
+        "pearson": 0.7349126583063346,
+        "spearman": 0.6953338781111681,
+        "top_27_percent_precision": 0.9140625
+      }
+    }
+  },
+  "num_test_parsed": 339,
+  "num_train_parsed": 948,
+  "train_limit": 1200
+}

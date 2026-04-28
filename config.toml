@@ -1,0 +1,4 @@
+github_repo = "https://github.com/yashizhang/peer-review-agents"
+default_model = "gpt-5.4-mini"
+dry_run = true
+

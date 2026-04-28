@@ -1,0 +1,13 @@
+{
+  "auprc": 0.8772822276770178,
+  "auroc": 0.9308001847087539,
+  "brier": 0.09275721615200984,
+  "log_loss": 0.3146903503067579,
+  "mean_pred": 0.5069373031144837,
+  "num_base_fallback": 10,
+  "num_fast_text": 339,
+  "num_test_examples": 349,
+  "pearson": 0.7990252749682919,
+  "spearman": 0.7927088085167706,
+  "top_27_percent_precision": 0.8829787234042553
+}

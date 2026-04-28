@@ -1,0 +1,112 @@
+competition:
+  max_agents: 3
+  min_external_citations_for_verdict: 3
+  initial_karma: 100.0
+  first_comment_cost: 1.0
+  followup_comment_cost: 0.1
+  score_min: 0.0
+  score_max: 10.0
+
+paths:
+  iclr_raw_dir: data/iclr26/raw
+  iclr_processed_dir: data/iclr26/processed
+  koala_cache_dir: data/koala_cache
+  koala_dataset_dir: data/koala_iclr2026
+  model_dir: models/iclr26_v1
+  reasoning_dir: reasoning
+  logs_dir: data/logs
+
+models:
+  version: iclr26_v1
+  use_lightgbm: false
+  fallback_to_sklearn: true
+  n_folds: 3
+  random_seed: 42
+  calibration_method: isotonic
+  embedding_model: local-tfidf
+  llm_provider: codex
+  codex_model: gpt-5.4-mini
+  codex_auth_file: ""
+  use_fulltext_evidence: true
+  use_llm_harness: true
+  use_llm_comment_polish: true
+  llm_judge_cache_dir: data/llm_judge_cache
+  llm_comment_cache_dir: data/llm_comment_cache
+
+online_policy:
+  dry_run: true
+  max_first_comments_per_agent_per_day: 30
+  max_total_active_papers_per_agent: 90
+  min_paper_age_hours_to_comment: 4
+  max_paper_age_hours_to_comment: 44
+  target_min_other_agents_for_comment: 2
+  target_max_other_agents_for_comment: 9
+  skip_if_comment_count_too_high: 18
+  verdict_deadline_priority_hours: 8
+  min_comment_quality_to_cite: 0.55
+  max_comments_per_paper_by_agent: 2
+
+github:
+  repo: ""
+  raw_base_url: ""
+  publish_enabled: false
+
+iclr_field_map:
+  paper_id: paper_id
+  title: title
+  abstract: abstract
+  full_text: full_text
+  decision: decision_label
+  reviews: official_reviews
+  meta_review: meta_reviews
+
+agents:
+  review_director:
+    shard_id: 0
+    shard_mod: 1
+    focus: fulltext_calibrated_review
+    domains:
+      - Computer-Vision
+      - Deep-Learning
+      - Generative-Models
+      - Graph-Learning
+      - Healthcare-Science-Applications
+      - LLM-Alignment
+      - Multi-agent-Game-Theory
+      - NLP
+      - Optimization
+      - Probabilistic-Methods
+      - Reinforcement-Learning
+      - Robotics
+      - Speech-Audio
+      - Theory
+      - Trustworthy-ML
+  calibrated_decider:
+    shard_id: 0
+    shard_mod: 3
+    focus: calibrated_decision
+    domains:
+      - Theory
+      - Optimization
+      - Probabilistic-Methods
+      - Reinforcement-Learning
+  rigor_auditor:
+    shard_id: 1
+    shard_mod: 3
+    focus: experimental_rigor
+    domains:
+      - Deep-Learning
+      - NLP
+      - Computer-Vision
+      - Generative-Models
+      - Robotics
+  novelty_scout:
+    shard_id: 2
+    shard_mod: 3
+    focus: novelty_literature
+    domains:
+      - NLP
+      - Trustworthy-ML
+      - Graph-Learning
+      - Healthcare-Science-Applications
+      - Multimodal

@@ -1,1 +1,72 @@
-data/
+# Python/runtime
+/.venv/
+/venv/
+/env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Test/lint/cache output
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local OS/editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets and local credentials
+.env
+.env.*
+.api_key
+**/.api_key
+*.pem
+*.key
+*.p12
+*.pfx
+*oauth*.json
+strategy_config.local.yaml
+config.local.toml
+agent_configs/*/config.local.json
+
+# Competition/data caches. These include downloaded PDFs, parsed PDFs,
+# hidden labels, logs, SQLite cache, and LLM call caches.
+/data/
+
+# Model artifacts for out-of-the-box inference.
+# Keep the small production artifacts; ignore bulky/intermediate experiments,
+# feature matrices, OOF arrays, and prediction CSVs that may contain labels.
+/models/*
+!/models/iclr26_v1/
+/models/iclr26_v1/*
+!/models/iclr26_v1/model_a.pkl
+!/models/iclr26_v1/model_b.pkl
+!/models/iclr26_v1/model_c.pkl
+!/models/iclr26_v1/stacker.pkl
+!/models/iclr26_v1/fulltext_evidence_model.pkl
+!/models/iclr26_v1/fulltext_text_evidence_model.pkl
+!/models/iclr26_v1/*metrics*.json
+!/models/iclr26_v1/metrics.json
+!/models/iclr26_v1/calibration_card.md
+
+# Generated dry-run or submitted reasoning files. Real competition reasoning
+# URLs should point at the final published files, not local scratch output.
+/reasoning/
+
+# Local logs and scheduler/job output
+*.log
+*.out
+*.err
+slurm-*.out
+
+# Machine-specific notes
+cluster.md
