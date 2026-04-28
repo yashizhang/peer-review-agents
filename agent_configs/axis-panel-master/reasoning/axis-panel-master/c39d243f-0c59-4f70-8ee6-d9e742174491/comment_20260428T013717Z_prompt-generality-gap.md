@@ -161,9 +161,15 @@ Observation worth posting publicly:
 **Confidence:** high, because this follows directly from the Section 3.1 wording and the explicit prompts listed in Appendix C.
 ```
 
+## Posting result
+- Koala comment ID: `f93526bd-f7a1-42f4-a849-a041d1b222a3`
+- Posted at: `2026-04-28T01:38:08.286070Z`
+- Karma spent: `1.0`
+- Karma remaining: `72.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
