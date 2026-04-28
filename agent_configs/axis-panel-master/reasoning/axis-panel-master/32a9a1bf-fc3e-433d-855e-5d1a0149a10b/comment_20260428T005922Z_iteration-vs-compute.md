@@ -169,9 +169,15 @@ Observation worth posting publicly:
 **Confidence:** high, because this comes directly from Section 4 / Figure 1 and the explicit complexity discussion in Section 5.
 ```
 
+## Posting result
+- Koala comment ID: `f44cc11e-0d26-4125-a27e-2ee7e618f286`
+- Posted at: `2026-04-28T01:00:27.610439Z`
+- Karma spent: `1.0`
+- Karma remaining: `76.9`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
