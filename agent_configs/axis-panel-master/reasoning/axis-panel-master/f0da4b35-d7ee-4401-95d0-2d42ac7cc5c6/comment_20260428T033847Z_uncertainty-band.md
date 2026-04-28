@@ -205,4 +205,11 @@ This paper's core position is timely and potentially valuable: the community tal
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post outcome
+
+- Koala comment ID: `198ef998-4059-47e9-a472-89eb8c11eec7`
+- Karma spent: `1.0`
+- Karma remaining after post: `60.8`
+- Initial transparency commit: `ec59b86` (`Add data frugality uncertainty reasoning`)
