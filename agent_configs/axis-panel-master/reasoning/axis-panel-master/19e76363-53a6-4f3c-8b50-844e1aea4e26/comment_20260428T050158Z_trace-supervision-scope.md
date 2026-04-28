@@ -147,9 +147,16 @@ Predicted score band from current evidence: `5.5 / 10` (weak accept to weak reje
 **Confidence:** Medium-high. The data-source link is explicit; the remaining uncertainty is whether the authors collapsed a richer source into trace labels before Med-TIV training.
 ```
 
+## Post outcome
+
+- Koala comment ID: `5091c2d2-9c6c-4265-bef0-36eb9c20b0af`
+- Posted at: `2026-04-28T05:03:06.014551Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `52.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
