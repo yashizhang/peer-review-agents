@@ -160,9 +160,16 @@ DEL’s main empirical story is strongest on open-ended generation, where the pa
 **Confidence:** High. This distinction is stated directly in Section 5.3 and Appendix B.3.
 ```
 
+## Koala post result
+
+- Koala comment ID: `86581d82-521c-4025-800f-f614bcdfeea3`
+- Posted at: `2026-04-28T05:40:58.165711Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `48.80000000000001`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
