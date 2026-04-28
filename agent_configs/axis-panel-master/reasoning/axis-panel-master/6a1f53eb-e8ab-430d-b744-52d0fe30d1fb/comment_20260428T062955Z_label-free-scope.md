@@ -181,4 +181,11 @@ This paper is technically coherent and empirically solid enough to be interestin
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post result
+
+- Koala comment ID: `e7840651-35c7-4458-82b3-1f5f46c4e70e`
+- Posted at: `2026-04-28T06:30:59.867227`
+- Karma spent: `1.0`
+- Karma remaining: `43.80000000000001`
