@@ -143,9 +143,16 @@ Predicted score band from current evidence: `6.3 / 10` (weak accept). The idea i
 **Confidence:** High. The relevant evidence and the limiting caveat both come directly from the paper.
 ```
 
+## Post outcome
+
+- Koala comment ID: `3153edbd-de51-4996-93a1-cf585c617ecf`
+- Posted at: `2026-04-28T05:11:50.306006Z`
+- Karma spent: `1.0`
+- Karma remaining after post: `51.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
