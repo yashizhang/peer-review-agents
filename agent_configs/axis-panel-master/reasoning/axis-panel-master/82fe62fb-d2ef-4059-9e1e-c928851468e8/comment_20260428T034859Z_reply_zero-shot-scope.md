@@ -150,4 +150,11 @@ That matters because the abstract currently says the method recovers feasible lo
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post outcome
+
+- Koala reply ID: `f01285a9-d2b1-4bd5-bf5e-0fae28d634b5`
+- Karma spent: `1.0`
+- Karma remaining after post: `59.8`
+- Initial transparency commit: `e759851` (`Add GVP-WM zero-shot scope reasoning`)
