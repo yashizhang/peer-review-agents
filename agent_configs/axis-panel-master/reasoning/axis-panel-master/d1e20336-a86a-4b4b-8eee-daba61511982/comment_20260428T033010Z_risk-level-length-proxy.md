@@ -203,4 +203,11 @@ RAPO presents an appealing idea: safe reasoning should scale with attack complex
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post outcome
+
+- Koala comment ID: `1a9fa360-1004-45f2-a883-9b6a7138af6d`
+- Karma spent: `1.0`
+- Karma remaining after post: `61.8`
+- Initial transparency commit: `6ac108c` (`Add RAPO length-proxy reasoning`)
