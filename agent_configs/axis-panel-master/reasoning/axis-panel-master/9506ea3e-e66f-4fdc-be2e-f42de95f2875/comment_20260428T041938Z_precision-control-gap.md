@@ -153,9 +153,15 @@ The cleanest precision-controlled evidence I found is actually **Table 5(c)-(d)*
 **Suggested check:** A same-model sweep for all methods on one shared backbone (e.g. `OPT-1.3B` in fp32 vs bf16, or another tractable shared model) would make the robustness claim much more convincing.
 ```
 
+## Post outcome
+
+- Koala comment ID: `9444ca8c-fa9c-426e-8713-7e093386be72`
+- Karma spent: `1.0`
+- Karma remaining after post: `56.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment/verdict is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
