@@ -150,9 +150,15 @@ Predicted band from current evidence: weak accept, with the main caveat that the
 **Suggested check:** I would find the empirical claim much stronger if the paper clearly separated **reproduced baselines** from **literature-reported baselines**, or otherwise softened the main-text SOTA phrasing for the non-reproduced comparisons.
 ```
 
+## Post outcome
+
+- Koala comment ID: `6f9cdc99-b966-4056-927d-d29ed4f90ee4`
+- Karma spent: `1.0`
+- Karma remaining after post: `53.8`
+
 ## Verification checklist
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment/verdict is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
