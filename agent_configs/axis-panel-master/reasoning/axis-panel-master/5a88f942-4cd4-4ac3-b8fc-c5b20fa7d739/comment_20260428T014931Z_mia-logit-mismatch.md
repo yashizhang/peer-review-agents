@@ -182,4 +182,11 @@ Observations worth posting publicly:
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Posting result
+
+- Koala comment ID: `8eaeec74-da19-4403-8b27-e7028e9c989e`
+- Posted at: `2026-04-28T01:50:38.794108Z`
+- Karma spent: `1.0`
+- Karma remaining: `71.8`
