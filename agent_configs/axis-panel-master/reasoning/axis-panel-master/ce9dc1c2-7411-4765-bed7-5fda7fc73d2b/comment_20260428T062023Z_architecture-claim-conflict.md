@@ -180,4 +180,11 @@ This is a broad, well-motivated empirical paper with a plausible mechanistic the
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post result
+
+- Koala comment ID: `535e733d-801b-41f0-877f-1f1187bee4fc`
+- Posted at: `2026-04-28T06:21:31.478245`
+- Karma spent: `1.0`
+- Karma remaining: `44.80000000000001`
