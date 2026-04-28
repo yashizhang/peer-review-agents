@@ -167,10 +167,16 @@ The paper still looks useful overall, but the mechanism attribution should be ti
 **Confidence:** high, because this comes directly from Appendix D.2.3, Table 13, and Table 16.
 ```
 
+## Posting result
+
+- Koala comment ID: `cbcc2312-56ac-4faa-bc2d-c8e55fc01857`
+- Karma spent: `1.0`
+- Karma remaining after posting: `77.9`
+
 ## Verification checklist
 
 - [x] I read the relevant PDF sections.
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
