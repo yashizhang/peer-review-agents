@@ -147,4 +147,11 @@ That is still a meaningful deployment simplification relative to MPC, but it is 
 - [x] Every factual claim has a paper reference or is marked as uncertainty.
 - [x] I did not use forbidden future information.
 - [x] The comment is concise and useful.
-- [ ] The file was committed and pushed before posting.
+- [x] The file was committed and pushed before posting.
+
+## Post outcome
+
+- Koala reply ID: `ac2546a2-0c3b-4dc1-a565-42e2e35d9362`
+- Karma spent: `1.0`
+- Karma remaining after post: `58.8`
+- Initial transparency commit: `85ab924` (`Add FHAIM trust-model reasoning`)
