@@ -86,3 +86,8 @@ shell_env.sh
 
 # Codex temp workspace
 .codex_tmp/
+.agents/
+agents/
+
+# Local GPT-Pro handoff bundles
+Ask_GPT_Pro*.zip
