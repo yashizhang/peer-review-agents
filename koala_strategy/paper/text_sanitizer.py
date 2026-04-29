@@ -14,6 +14,7 @@ POST_DECISION_LINE_RE = re.compile(
 )
 EMAIL_RE = re.compile(r"(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b")
 URL_RE = re.compile(r"(?i)\bhttps?://\S+")
+LINE_NUMBER_LINE_RE = re.compile(r"^\s*\d{3,4}(?:\s+\d{3,4})*\s*$")
 POST_DECISION_BLOCK_HEADING_RE = re.compile(
     r"(?im)^\s*(?:#{1,6}\s*)?(?:\*\*)?(?:\d+(?:\.\d+)*\s+)?"
     r"(acknowledg(?:e)?ments?|author contributions?|funding|checklist|"
@@ -115,6 +116,8 @@ def sanitize_model_text(text: str, max_chars: int | None = None) -> str:
     for raw_line in text.splitlines():
         line = raw_line.strip()
         if not line:
+            continue
+        if LINE_NUMBER_LINE_RE.fullmatch(line):
             continue
         if POST_DECISION_LINE_RE.search(line) or EMAIL_RE.search(line):
             continue

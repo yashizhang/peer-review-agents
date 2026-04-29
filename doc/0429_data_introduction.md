@@ -357,7 +357,7 @@ ICLR26 JSONL record
 |---|---|---|---|
 | `Paper2Markdown-V0` | PyMuPDF legacy cache | `data/pdf_cache/parsed/{paper_id}.json`，含 `full_text` / `page_texts` / regex sections | 已用于早期 full-text evidence；速度快但结构弱、section 不稳、匿名清洗不足 |
 | `Paper2Markdown-V1` | Marker non-LLM raw parse baseline | Markdown、Marker JSON、Marker chunks、meta TOC、figure images、`parse_report.json` | 已在 Mila 对 RaftPPI / `Dp1RM3gPg8` smoke 成功 |
-| `Paper2Markdown-V2` | V1 raw parse + deterministic anonymization | review-agent-facing anonymous text/chunks；raw parse 仍保留用于审计 | 本地 sanitizer 已加测试，先覆盖作者/单位 header 与 acknowledgement/funding block |
+| `Paper2Markdown-V2` | V1 raw parse + deterministic model-facing artifact gate | `sanitized_v2.txt`、`chunks_v2_anonymized.jsonl`、asset keep/reject manifest、全 artifact leak audit；raw parse 仍保留用于审计 | 已根据 GPT-Pro feedback 修正 chunk 脱敏、真实页码、行号污染和 asset 质量过滤 |
 
 V1 相比 V0 的实质改进：
 
@@ -371,7 +371,10 @@ V2 的边界：
 - V2 不是删除 raw cache，而是在 raw cache 后生成给模型/agent 使用的 anonymous payload。
 - V2 默认删除 title page 中 title 到 abstract 之间的 author/affiliation block。
 - V2 删除 acknowledgement、author contribution、funding、camera-ready/rebuttal/checklist 等 block，直到下一个安全 section，如 references 或 appendix。
-- V2 仍需要后续接入 final `chunks.jsonl` 生成器，当前只先锁定 sanitizer 行为。
+- V2 的 chunks 必须从 Marker block id 恢复真实 PDF 页码，禁止把 Marker internal `page` id 当作页码。
+- V2 的 leak audit 必须覆盖所有 model-facing text artifacts，包括 `sanitized_v2.txt`、`chunks_v2_anonymized.jsonl`、prompt payload 和 debug JSON。
+- V2 的 visual assets 只作为可选 evidence fallback，必须通过尺寸、长宽比和疑似行号条过滤后再进入 agent payload。
+- V2 仍不是 raw PDF 的完全替代品：关键表格、图和公式应支持回看原始 PDF page screenshot。
 
 建议新增：
 
@@ -380,8 +383,9 @@ data/pdf_parse_cache/v1/{paper_id}/
   paper.md
   paper.blocks.json
   assets.json
-  chunks.jsonl
+  chunks_v2_anonymized.jsonl
   parse_report.json
+  sanitization_report.json
   legacy_payload.json
 ```
 
@@ -393,6 +397,8 @@ data/pdf_parse_cache/v1/{paper_id}/
 - parser 默认不做 LLM summarization、semantic compression、citation deletion 或随机 section sampling。
 - Review agent 应主要读取 section-aware `chunks.jsonl`，而不是一次性读一个大 `full_text`。
 - `parse_report.json` 要记录 parser、fallback、page count、section count、caption count、text length、leakage hit 等质量指标。
+- `chunks_v2_anonymized.jsonl` 的页码必须落在 PDF `page_count` 内；没有可靠页码的 chunk 不能生成 page citation。
+- `assets.json` 中 `keep=false` 的图片不能自动喂给 GPT，只能用于人工审计或后续 fallback 调试。
 
 ## 注意事项
 

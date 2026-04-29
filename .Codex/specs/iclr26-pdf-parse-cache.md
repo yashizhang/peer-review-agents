@@ -29,11 +29,14 @@ Build an evidence-preserving PDF preprocessing pipeline for ICLR26 papers so the
 6. Produce section-aware chunks with stable metadata: `paper_id`, `chunk_id`, `section`, `page_start`, `page_end`, `type`, `text`, and optional asset references.
 7. Preserve raw parsed text and chunk text. Do not summarize, rewrite, randomly sample, remove citations for compression, or replace original text with an LLM-generated outline.
 8. Keep leakage mitigation explicit. Review-agent-facing sanitized payloads must continue to scrub venue/status, author identity, acknowledgements, DOI/page-marker/parser artifacts, and other known PDF extraction leakage without deleting the raw parse cache.
-9. Emit deterministic parse-quality checks in `parse_report.json`, including at least title presence, abstract presence, section count, references boundary, page count, text length, figure/table caption counts, suspicious leakage-line counts, and parser fallback used.
-10. Preserve compatibility with the current full-text feature path, either by writing a legacy-compatible sanitized JSON payload or by adapting readers to consume the new cache without breaking existing callers.
-11. Add focused unit tests before implementation for inventory creation, quality-report classification, section-aware chunking, asset metadata normalization, and sanitized legacy payload generation.
-12. Run a Mila smoke parse for paper `11072` after local tests pass, record exact command, remote commit or worktree state, artifact path, runtime, parser used, and quality report summary in AJZ-111.
-13. Do not commit data, PDFs, parse caches, model artifacts, remote logs, tokens, or machine-local config.
+9. Generate model-facing chunks only after sanitization or per-chunk sanitization, and audit every model-facing text artifact rather than only the aggregate sanitized text file.
+10. Recover chunk page provenance from true PDF page indices, not Marker internal page ids; every emitted chunk must satisfy `1 <= page_start <= page_end <= page_count`.
+11. Filter PDF line-number pollution from text and reject visual crops that are too small, extreme-aspect-ratio, or likely margin line-number strips before using assets as model input.
+12. Emit deterministic parse-quality checks in `parse_report.json`, including at least title presence, abstract presence, section count, references boundary, page count, text length, figure/table caption counts, suspicious leakage-line counts, and parser fallback used.
+13. Preserve compatibility with the current full-text feature path, either by writing a legacy-compatible sanitized JSON payload or by adapting readers to consume the new cache without breaking existing callers.
+14. Add focused unit tests before implementation for inventory creation, quality-report classification, section-aware chunking, asset metadata normalization, and sanitized legacy payload generation.
+15. Run a Mila smoke parse for paper `11072` after local tests pass, record exact command, remote commit or worktree state, artifact path, runtime, parser used, and quality report summary in AJZ-111.
+16. Do not commit data, PDFs, parse caches, model artifacts, remote logs, tokens, or machine-local config.
 
 ## Constraints
 - Default parse mode is non-LLM. `--use_llm`, `--redo_inline_math`, and similar LLM repair options are only explicit retry modes for bad cases.
@@ -51,6 +54,9 @@ Build an evidence-preserving PDF preprocessing pipeline for ICLR26 papers so the
 - Test parse-quality reports flag too-short text, missing abstract, missing references, low section count, and leakage-pattern hits.
 - Test legacy sanitized payload generation retains compatibility with `ParsedPaperText` and strips known leakage blocks from review-agent-facing text.
 - Test asset metadata normalization keeps figure/table caption, path, width, height, and aspect ratio when provided by Marker or Docling adapters.
+- Test chunk generation skips pre-abstract identity blocks, independently sanitizes chunk text, and audits all model-facing text artifacts.
+- Test chunk page numbers are true 1-based PDF page references and reject out-of-range provenance.
+- Test line-number-only text blocks and low-quality image crops are filtered before model-facing use.
 - Run focused tests first, then `python -m pytest -q`.
 - On Mila, run the 11072 smoke parse only after tests pass. If the smoke fails, inspect the command log and first parser error before retrying.
 

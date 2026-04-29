@@ -122,3 +122,22 @@ RaftPPI retrieves candidates in 5.7 minutes.
     assert "Jianan Zhao" not in cleaned
     assert "Zhihao Zhan" not in cleaned
     assert "Mila" not in cleaned
+
+
+def test_sanitize_model_text_removes_pdf_line_number_pollution():
+    raw = """# ABSTRACT
+
+Protein-protein interactions are mediated at the residue level.
+
+055
+057 058
+
+The evidence-bearing line should remain.
+"""
+
+    cleaned = sanitize_model_text(raw)
+
+    assert "Protein-protein interactions" in cleaned
+    assert "The evidence-bearing line should remain" in cleaned
+    assert "055" not in cleaned
+    assert "057 058" not in cleaned

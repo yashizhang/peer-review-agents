@@ -97,7 +97,13 @@ download_failed                1,211
 
 `Paper2Markdown-V1` 是当前 Mila smoke 验证过的 Marker non-LLM raw parse baseline。它在 RaftPPI / `Dp1RM3gPg8` 上输出 Markdown、Marker JSON、Marker chunks、meta TOC、figure images 和 `parse_report.json`；相比 V0，它有 block/page/section provenance，更适合构造 review-agent chunks。但 V1 raw output 仍保留作者、单位、code release 和 acknowledgement 等匿名性风险，因此不能直接作为模型输入。
 
-`Paper2Markdown-V2` 在 V1 raw parse 之后增加 deterministic anonymization / scrub layer。原则是保留 raw parse cache 以便审计，同时让 review-agent-facing payload 默认删除 title page author/affiliation block、acknowledgement/funding blocks、email、OpenReview/status/camera-ready 等泄漏文本。
+`Paper2Markdown-V2` 在 V1 raw parse 之后增加 deterministic model-facing artifact gate。原则是保留 raw parse cache 以便审计，但所有 review-agent / predictor 会读到的 payload 必须经过同一套安全出口：
+
+- `sanitized_v2.txt` 删除 title page author/affiliation block、acknowledgement/funding blocks、email、OpenReview/status/camera-ready、PDF 行号污染等泄漏文本。
+- `chunks_v2_anonymized.jsonl` 从 Marker blocks 重新生成，跳过 abstract 前的作者/单位 block，并对每条 chunk 独立清洗。
+- chunk 页码从 Marker block id 的 `/page/{i}/...` 恢复成真实 1-based PDF page number，并强制满足 `1 <= page_start <= page_end <= page_count`；不再使用 Marker internal `page` id。
+- `assets.json` 标注 image crop 是否可作为 visual evidence，默认过滤过小、极端长宽比、疑似 margin line-number strip 的 crop。
+- `sanitization_report.json` 不只检查 `sanitized_v2.txt`，还要覆盖 chunks 等所有 model-facing text artifacts。
 
 parser 改进目标是保留 legacy JSON 兼容层，同时新增 review-ready parse cache：
 
@@ -106,8 +112,9 @@ data/pdf_parse_cache/v1/{paper_id}/
   paper.md
   paper.blocks.json
   assets.json
-  chunks.jsonl
+  chunks_v2_anonymized.jsonl
   parse_report.json
+  sanitization_report.json
   legacy_payload.json
 ```
 
