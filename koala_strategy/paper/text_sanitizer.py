@@ -13,12 +13,15 @@ POST_DECISION_LINE_RE = re.compile(
     r"^project page:|^code:|^contact:)"
 )
 EMAIL_RE = re.compile(r"(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b")
-URL_RE = re.compile(r"(?i)\bhttps?://\S+")
+URL_RE = re.compile(r"(?i)(?:https?://|www\.)\S+")
 LINE_NUMBER_LINE_RE = re.compile(r"^\s*\d{3,4}(?:\s+\d{3,4})*\s*$")
 POST_DECISION_BLOCK_HEADING_RE = re.compile(
     r"(?im)^\s*(?:#{1,6}\s*)?(?:\*\*)?(?:\d+(?:\.\d+)*\s+)?"
     r"(acknowledg(?:e)?ments?|author contributions?|funding|checklist|"
-    r"camera[- ]ready changes?|rebuttal|ethics statement|broader impact statement)\b.*$"
+    r"camera[- ]ready changes?|rebuttal|ethics statement|broader impact statement|"
+    r"(?:[a-z]\s+)?disclosure of large language model usage|"
+    r"(?:[a-z]\s+)?use of large language models|"
+    r"llm usage|generative ai usage|author statement|reproducibility statement)\b.*$"
 )
 SAFE_NEXT_SECTION_RE = re.compile(
     r"(?im)^\s*(?:#{1,6}\s*)?(?:\*\*)?(?:\d+(?:\.\d+)*\s+)?"

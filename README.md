@@ -105,6 +105,8 @@ download_failed                1,211
 - `assets.json` 标注 image crop 是否可作为 visual evidence，默认过滤过小、极端长宽比、疑似 margin line-number strip 的 crop。
 - `sanitization_report.json` 不只检查 `sanitized_v2.txt`，还要覆盖 chunks 等所有 model-facing text artifacts。
 
+`Paper2Markdown-V3` 是默认 agent 输入层：不再建议把 `sanitized_v2.txt` 整段塞进 prompt，而是从匿名 chunks 生成 `model_text_v3.txt`，格式为 `[p. N | section: ... | type: ...] evidence`。V3 同时输出 `main_body_chunks.jsonl`、`appendix_chunks.jsonl`、`reference_chunks.jsonl`，让 predictor 默认只看 main body，appendix/reference 走 on-demand retrieval。V3 还会过滤 LLM usage / disclosure / reproducibility / author statement sections，并修复粘连 URL，例如 `Ihttps://...`。
+
 parser 改进目标是保留 legacy JSON 兼容层，同时新增 review-ready parse cache：
 
 ```text
@@ -112,7 +114,11 @@ data/pdf_parse_cache/v1/{paper_id}/
   paper.md
   paper.blocks.json
   assets.json
-  chunks_v2_anonymized.jsonl
+  chunks_v3_anonymized.jsonl
+  model_text_v3.txt
+  main_body_chunks.jsonl
+  appendix_chunks.jsonl
+  reference_chunks.jsonl
   parse_report.json
   sanitization_report.json
   legacy_payload.json

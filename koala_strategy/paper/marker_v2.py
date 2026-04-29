@@ -17,6 +17,8 @@ from koala_strategy.paper.text_sanitizer import (
 PAGE_ID_RE = re.compile(r"^/page/(\d+)/")
 BODY_START_RE = re.compile(r"(?i)^(abstract|1\s+introduction|introduction)\b")
 EXCLUDED_BLOCK_TYPES = {"PageHeader", "PageFooter"}
+REFERENCE_SECTION_RE = re.compile(r"(?i)^(references|bibliography)\b")
+APPENDIX_SECTION_RE = re.compile(r"(?i)^(appendix|supplementary|[a-z]\s+)")
 
 
 def marker_page_number(block: Mapping[str, Any], page_count: int) -> int:
@@ -102,7 +104,9 @@ def build_marker_v2_chunks(
                 skipping_unsafe_section = True
                 current_section = heading
                 continue
-            if body_started and skipping_unsafe_section and SAFE_NEXT_SECTION_RE.match(heading):
+            if body_started and skipping_unsafe_section and (
+                SAFE_NEXT_SECTION_RE.match(heading) or APPENDIX_SECTION_RE.match(heading)
+            ):
                 skipping_unsafe_section = False
             if body_started and heading:
                 current_section = heading
@@ -248,3 +252,43 @@ def filter_marker_assets(
             }
         )
     return manifest
+
+
+def split_chunks_by_view(chunks: Sequence[Mapping[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """Split chunks into default model, appendix, and reference views."""
+
+    views: dict[str, list[dict[str, Any]]] = {
+        "main_body_chunks": [],
+        "appendix_chunks": [],
+        "reference_chunks": [],
+    }
+    after_references = False
+    for chunk in chunks:
+        section = _normalize_heading(str(chunk.get("section") or ""))
+        section_key = section.lower()
+        if REFERENCE_SECTION_RE.match(section_key):
+            view = "reference_chunks"
+            after_references = True
+        elif after_references or APPENDIX_SECTION_RE.match(section_key):
+            view = "appendix_chunks"
+        else:
+            view = "main_body_chunks"
+        views[view].append(dict(chunk))
+    return views
+
+
+def render_model_text_v3(chunks: Sequence[Mapping[str, Any]]) -> str:
+    """Render chunks into the default GPT/factsheet text payload."""
+
+    rendered: list[str] = []
+    for chunk in chunks:
+        page_start = chunk.get("page_start")
+        page_end = chunk.get("page_end")
+        page = f"p. {page_start}" if page_start == page_end else f"pp. {page_start}-{page_end}"
+        section = str(chunk.get("section") or "Unknown")
+        block_type = str(chunk.get("type") or "Text")
+        text = " ".join(str(chunk.get("text") or "").split())
+        if not text:
+            continue
+        rendered.append(f"[{page} | section: {section} | type: {block_type}]\n{text}")
+    return "\n\n".join(rendered)

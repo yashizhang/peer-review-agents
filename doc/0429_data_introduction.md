@@ -358,6 +358,7 @@ ICLR26 JSONL record
 | `Paper2Markdown-V0` | PyMuPDF legacy cache | `data/pdf_cache/parsed/{paper_id}.json`，含 `full_text` / `page_texts` / regex sections | 已用于早期 full-text evidence；速度快但结构弱、section 不稳、匿名清洗不足 |
 | `Paper2Markdown-V1` | Marker non-LLM raw parse baseline | Markdown、Marker JSON、Marker chunks、meta TOC、figure images、`parse_report.json` | 已在 Mila 对 RaftPPI / `Dp1RM3gPg8` smoke 成功 |
 | `Paper2Markdown-V2` | V1 raw parse + deterministic model-facing artifact gate | `sanitized_v2.txt`、`chunks_v2_anonymized.jsonl`、asset keep/reject manifest、全 artifact leak audit；raw parse 仍保留用于审计 | 已根据 GPT-Pro feedback 修正 chunk 脱敏、真实页码、行号污染和 asset 质量过滤 |
+| `Paper2Markdown-V3` | V2 chunks + 默认 agent/predictor 输入层 | `model_text_v3.txt`、`main_body_chunks.jsonl`、`appendix_chunks.jsonl`、`reference_chunks.jsonl`、filtered assets | 默认从 chunks 渲染 prompt payload，不再直接读整段 `sanitized_v2.txt`；过滤 LLM disclosure 和粘连 URL |
 
 V1 相比 V0 的实质改进：
 
@@ -376,6 +377,14 @@ V2 的边界：
 - V2 的 visual assets 只作为可选 evidence fallback，必须通过尺寸、长宽比和疑似行号条过滤后再进入 agent payload。
 - V2 仍不是 raw PDF 的完全替代品：关键表格、图和公式应支持回看原始 PDF page screenshot。
 
+V3 的边界：
+
+- V3 默认 model input 是 `model_text_v3.txt`，来源于 `main_body_chunks.jsonl`，每段带真实 page/section/type 前缀。
+- V3 仍保留 `sanitized_v3.txt` 作为审计文本，但不建议作为默认 prompt 输入。
+- `appendix_chunks.jsonl` 和 `reference_chunks.jsonl` 默认不进 predictor，只用于 appendix/proof/novelty on-demand retrieval。
+- V3 过滤 `A DISCLOSURE OF LARGE LANGUAGE MODEL USAGE`、`C USE OF LARGE LANGUAGE MODELS`、`author statement`、`reproducibility statement` 等 section，减少 artifact correlation。
+- V3 URL scrub 不再依赖 word boundary，能处理 `Ihttps://...` 这类粘连 URL。
+
 建议新增：
 
 ```text
@@ -383,7 +392,11 @@ data/pdf_parse_cache/v1/{paper_id}/
   paper.md
   paper.blocks.json
   assets.json
-  chunks_v2_anonymized.jsonl
+  chunks_v3_anonymized.jsonl
+  model_text_v3.txt
+  main_body_chunks.jsonl
+  appendix_chunks.jsonl
+  reference_chunks.jsonl
   parse_report.json
   sanitization_report.json
   legacy_payload.json

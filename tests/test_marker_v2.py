@@ -8,6 +8,8 @@ from koala_strategy.paper.marker_v2 import (
     build_marker_v2_chunks,
     filter_marker_assets,
     jpeg_dimensions,
+    render_model_text_v3,
+    split_chunks_by_view,
 )
 
 
@@ -136,6 +138,38 @@ def test_build_marker_v2_chunks_skips_acknowledgment_until_safe_section():
     assert "Intel Corporation" not in joined
 
 
+def test_build_marker_v2_chunks_skips_llm_usage_disclosure_sections():
+    marker_payload = {
+        "page_info": {"0": {}, "1": {}, "2": {}},
+        "blocks": [
+            {"id": "/page/0/SectionHeader/1", "block_type": "SectionHeader", "html": "<h1>Abstract</h1>"},
+            {"id": "/page/0/Text/2", "block_type": "Text", "html": "<p>Paper contribution.</p>"},
+            {
+                "id": "/page/0/SectionHeader/3",
+                "block_type": "SectionHeader",
+                "html": "<h1>C Use of Large Language Models</h1>",
+            },
+            {
+                "id": "/page/0/Text/4",
+                "block_type": "Text",
+                "html": "<p>We used ChatGPT to polish the text.</p>",
+            },
+            {"id": "/page/1/SectionHeader/5", "block_type": "SectionHeader", "html": "<h1>References</h1>"},
+            {"id": "/page/1/Text/6", "block_type": "Text", "html": "<p>Smith et al. Useful baseline.</p>"},
+            {"id": "/page/2/SectionHeader/7", "block_type": "SectionHeader", "html": "<h1>B Visualizations</h1>"},
+            {"id": "/page/2/Text/8", "block_type": "Text", "html": "<p>Appendix figure description.</p>"},
+        ],
+    }
+
+    chunks = build_marker_v2_chunks(marker_payload, paper_id="paper", page_count=3)
+
+    joined = "\n".join(chunk["text"] for chunk in chunks)
+    assert "Paper contribution" in joined
+    assert "Smith et al." in joined
+    assert "Appendix figure description" in joined
+    assert "ChatGPT" not in joined
+
+
 def test_audit_model_facing_texts_checks_multiple_artifacts():
     result = audit_model_facing_texts(
         {
@@ -148,6 +182,58 @@ def test_audit_model_facing_texts_checks_multiple_artifacts():
     assert result["ok"] is False
     assert result["hits"]["Jianan Zhao"] == ["chunks_v2_anonymized.jsonl"]
     assert result["hits"]["Mila"] == []
+
+
+def test_split_chunks_by_view_and_render_model_text_v3():
+    chunks = [
+        {
+            "paper_id": "paper",
+            "chunk_id": "paper:0000",
+            "section": "Abstract",
+            "page_start": 1,
+            "page_end": 1,
+            "type": "Text",
+            "text": "Core contribution.",
+        },
+        {
+            "paper_id": "paper",
+            "chunk_id": "paper:0001",
+            "section": "4 Experiments",
+            "page_start": 5,
+            "page_end": 5,
+            "type": "TableGroup",
+            "text": "Benchmark table.",
+        },
+        {
+            "paper_id": "paper",
+            "chunk_id": "paper:0002",
+            "section": "References",
+            "page_start": 9,
+            "page_end": 9,
+            "type": "Text",
+            "text": "Smith et al.",
+        },
+        {
+            "paper_id": "paper",
+            "chunk_id": "paper:0003",
+            "section": "A Implementation Details",
+            "page_start": 10,
+            "page_end": 10,
+            "type": "Text",
+            "text": "Appendix detail.",
+        },
+    ]
+
+    views = split_chunks_by_view(chunks)
+    assert [chunk["chunk_id"] for chunk in views["main_body_chunks"]] == ["paper:0000", "paper:0001"]
+    assert [chunk["chunk_id"] for chunk in views["reference_chunks"]] == ["paper:0002"]
+    assert [chunk["chunk_id"] for chunk in views["appendix_chunks"]] == ["paper:0003"]
+
+    rendered = render_model_text_v3(views["main_body_chunks"])
+
+    assert "[p. 1 | section: Abstract | type: Text]" in rendered
+    assert "Core contribution." in rendered
+    assert "Smith et al." not in rendered
 
 
 def test_filter_marker_assets_rejects_small_or_narrow_images(tmp_path: Path):

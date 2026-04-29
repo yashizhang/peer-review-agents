@@ -141,3 +141,19 @@ The evidence-bearing line should remain.
     assert "The evidence-bearing line should remain" in cleaned
     assert "055" not in cleaned
     assert "057 058" not in cleaned
+
+
+def test_sanitize_model_text_removes_urls_without_word_boundary():
+    raw = """# ABSTRACT
+
+The method is described in the paper.
+
+Ihttps://www.intel.com/content/www/us/en/developer/articles/technical/stable-diffusion-inference-on-intel-data-center-gpu-max-series.html
+www.example.org/artifact
+"""
+
+    cleaned = sanitize_model_text(raw)
+
+    assert "The method is described" in cleaned
+    assert "https://" not in cleaned
+    assert "www.example.org" not in cleaned
