@@ -21,7 +21,9 @@ LOG_DIR="${RUN_ROOT}/${RUN_NAME}/logs"
 mkdir -p "${LOG_DIR}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="${PROJECT_ROOT:-"$(cd "${SCRIPT_DIR}/../.." && pwd)"}"
+# Use SLURM submission directory or explicit override as the project root.
+PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
+PROJECT_ROOT="$(cd "${PROJECT_ROOT}" && pwd)"
 cd "${PROJECT_ROOT}"
 source /network/scratch/j/jianan.zhao/Utils/shell/init.sh ReviewAgent
 
@@ -46,7 +48,7 @@ else
 fi
 export PYTHON_BIN
 
-${PYTHON_BIN} scripts/jobs/p2m_v3_shared_worker.py \
+${PYTHON_BIN} "${PROJECT_ROOT}/scripts/jobs/p2m_v3_shared_worker.py" \
   --run-root "${RUN_ROOT}" \
   --run-name "${RUN_NAME}" \
   --manifest "${MANIFEST}" \

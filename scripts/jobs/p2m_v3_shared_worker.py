@@ -4,12 +4,11 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import time
 from pathlib import Path
 from typing import Any
-
-import requests
 
 from koala_strategy.data.parse_manifests import _safe_url_from_record
 
@@ -43,20 +42,57 @@ def _download_pdf(url: str, destination: Path, *, timeout_seconds: int = 120) ->
     hasher = hashlib.sha256()
     bytes_count = 0
     try:
-        with requests.get(url, stream=True, timeout=timeout_seconds) as response:
-            if response.status_code != 200:
-                return False, response.status_code, None
-            with destination.open("wb") as handle:
-                for chunk in response.iter_content(chunk_size=2**20):
-                    if not chunk:
-                        continue
-                    hasher.update(chunk)
-                    bytes_count += len(chunk)
-                    handle.write(chunk)
-    except Exception:
         if destination.exists():
             destination.unlink()
-        raise
+    except OSError:
+        pass
+
+    status_code = -1
+    curl_cmd = shutil.which("curl")
+    if curl_cmd:
+        code, log = _run_command(
+            [
+                curl_cmd,
+                "-L",
+                "--fail",
+                "--show-error",
+                "--max-time",
+                str(timeout_seconds),
+                "--location-trusted",
+                "--output",
+                str(destination),
+                url,
+            ],
+            timeout=timeout_seconds + 20,
+        )
+        status_code = 0 if code == 0 else 1
+        if code != 0:
+            if destination.exists():
+                destination.unlink()
+            return False, status_code, None
+    else:
+        wget_cmd = shutil.which("wget")
+        if not wget_cmd:
+            return False, status_code, None
+        code, log = _run_command(
+            [wget_cmd, "--timeout", str(timeout_seconds), "-O", str(destination), url],
+            timeout=timeout_seconds + 20,
+        )
+        status_code = 0 if code == 0 else 1
+        if code != 0:
+            if destination.exists():
+                destination.unlink()
+            return False, status_code, None
+
+    if not destination.exists():
+        return False, status_code, None
+
+    with destination.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(2**20), b""):
+            if not chunk:
+                continue
+            hasher.update(chunk)
+            bytes_count += len(chunk)
     return True, bytes_count, hasher.hexdigest()
 
 
@@ -101,7 +137,9 @@ def run_marker_for_paper(
         start = time.time()
         code, log = _run_command(command, timeout=timeout_seconds)
         times[f"{timer_key}_sec"] = f"{time.time() - start:.2f}"
-        _page_log_path(paper_root, timer_key).write_text(log, encoding="utf-8")
+        page_log = _page_log_path(paper_root, timer_key)
+        page_log.parent.mkdir(parents=True, exist_ok=True)
+        page_log.write_text(log, encoding="utf-8")
         if code != 0:
             return False, times
     return True, times

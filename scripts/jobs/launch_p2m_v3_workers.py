@@ -99,6 +99,7 @@ def _submit_one(
         "MARKER_BIN": args.marker_binary,
         "MARKER_TIMEOUT_SECONDS": str(args.marker_timeout_seconds),
         "MAX_RETRIES": str(args.max_retries),
+        "PROJECT_ROOT": str(Path(__file__).resolve().parents[2]),
     }
     env_exports = [f"{k}={v}" for k, v in env.items()]
     full_cmd = cmd[:1] + [f"--export={','.join(env_exports)}"] + cmd[1:]
