@@ -70,3 +70,7 @@ slurm-*.out
 
 # Machine-specific notes
 cluster.md
+
+# Local machine/user environment generated for Utils shell init
+configs/user/env.yaml
+shell_env.sh

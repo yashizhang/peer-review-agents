@@ -136,6 +136,8 @@ When a command might take more than about 30 seconds:
 ## Mila Workflow
 
 - Mila is the default and only environment for smoke, pilot, and formal experiments in this project.
+- Initialize the project environment with the shared Utils shell entrypoint: `source /home/mila/j/jianan.zhao/scratch/Utils/shell/init.sh ReviewAgent`. In interactive shells this is usually available as `so ReviewAgent`.
+- The project-specific Utils config lives at `configs/user/env.yaml`, but this file is local/user-specific and must not be version-controlled because it may contain tokens or machine-private paths. Keep Mila module loads, scratch cache roots, and ReviewAgent convenience aliases there locally.
 - Before running on Mila, verify:
   - the remote repo checkout path,
   - the active Python environment,
