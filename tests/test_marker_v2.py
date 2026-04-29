@@ -87,6 +87,47 @@ def test_build_marker_v2_chunks_skips_pre_abstract_identity_and_uses_real_pages(
     assert "Mila" not in joined
 
 
+def test_build_marker_v2_chunks_starts_at_text_block_abstract():
+    marker_payload = {
+        "page_info": {"0": {}, "1": {}},
+        "blocks": [
+            {
+                "id": "/page/0/SectionHeader/1",
+                "block_type": "SectionHeader",
+                "html": "<h1>Universal Adversarial Attacks</h1>",
+            },
+            {
+                "id": "/page/0/Text/2",
+                "block_type": "Text",
+                "html": "<p>Hui Lu, Yi Yu, and Alex Kot</p>",
+            },
+            {
+                "id": "/page/0/Text/3",
+                "block_type": "Text",
+                "html": "<p><i>Abstract</i>—Targeted attacks need universal perturbations.</p>",
+            },
+            {
+                "id": "/page/0/SectionHeader/4",
+                "block_type": "SectionHeader",
+                "html": "<h1>I. INTRODUCTION</h1>",
+            },
+            {
+                "id": "/page/1/Text/5",
+                "block_type": "Text",
+                "html": "<p>The method aggregates target views.</p>",
+            },
+        ],
+    }
+
+    chunks = build_marker_v2_chunks(marker_payload, paper_id="paper", page_count=2)
+
+    assert [chunk["section"] for chunk in chunks] == ["Abstract", "I. INTRODUCTION"]
+    joined = "\n".join(chunk["text"] for chunk in chunks)
+    assert "Targeted attacks need universal perturbations" in joined
+    assert "aggregates target views" in joined
+    assert "Hui Lu" not in joined
+
+
 def test_build_marker_v2_chunks_filters_line_number_blocks_and_rejects_bad_pages():
     marker_payload = {
         "page_info": {"0": {}},

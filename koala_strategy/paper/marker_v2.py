@@ -15,7 +15,7 @@ from koala_strategy.paper.text_sanitizer import (
 
 
 PAGE_ID_RE = re.compile(r"^/page/(\d+)/")
-BODY_START_RE = re.compile(r"(?i)^(abstract|1\s+introduction|introduction)\b")
+BODY_START_RE = re.compile(r"(?i)^(abstract|(?:(?:\d+|[ivx]+)\.?\s+)?introduction)\b")
 EXCLUDED_BLOCK_TYPES = {"PageHeader", "PageFooter"}
 REFERENCE_SECTION_RE = re.compile(r"(?i)^(references|bibliography)\b")
 APPENDIX_SECTION_RE = re.compile(r"(?i)^(appendix|supplementary|[a-z]\s+)")
@@ -67,8 +67,13 @@ def _normalize_heading(text: str) -> str:
     return text.strip(" #*_:-")
 
 
-def _is_body_start_heading(text: str) -> bool:
-    return bool(BODY_START_RE.match(_normalize_heading(text)))
+def _body_start_section(text: str) -> str | None:
+    heading = _normalize_heading(text)
+    if not BODY_START_RE.match(heading):
+        return None
+    if re.match(r"(?i)^abstract\b", heading):
+        return "Abstract"
+    return heading
 
 
 def build_marker_v2_chunks(
@@ -98,7 +103,8 @@ def build_marker_v2_chunks(
         plain = _block_text(block)
         if block_type == "SectionHeader":
             heading = _normalize_heading(plain)
-            if _is_body_start_heading(heading):
+            body_start_section = _body_start_section(heading)
+            if body_start_section:
                 body_started = True
             if body_started and POST_DECISION_BLOCK_HEADING_RE.match(heading):
                 skipping_unsafe_section = True
@@ -118,7 +124,11 @@ def build_marker_v2_chunks(
             page_number = None
 
         if not body_started:
-            continue
+            body_start_section = _body_start_section(plain)
+            if not body_start_section:
+                continue
+            body_started = True
+            current_section = body_start_section
         if skipping_unsafe_section:
             continue
         if not plain or is_line_number_text(plain):
