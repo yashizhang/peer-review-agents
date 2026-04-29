@@ -88,8 +88,16 @@ def train_fast_text_evidence_cmd(
     train_limit: int = 1200,
     mode: str = "evidence_tables_safe",
     drop_artifact_features: bool = False,
+    include_numeric: bool = typer.Option(True, "--include-numeric/--no-include-numeric"),
 ) -> None:
-    print(train_fast_text_evidence_model(train_limit=train_limit, mode=mode, drop_artifact_features=drop_artifact_features))
+    print(
+        train_fast_text_evidence_model(
+            train_limit=train_limit,
+            mode=mode,
+            drop_artifact_features=drop_artifact_features,
+            include_numeric=include_numeric,
+        )
+    )
 
 
 @app.command("run-experiment-suite")

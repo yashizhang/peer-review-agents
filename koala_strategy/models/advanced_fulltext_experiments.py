@@ -33,6 +33,8 @@ from koala_strategy.utils import dump_json, ensure_dir
 
 SAFE_SUFFIX = "_safe"
 ARTIFACT_NUMERIC_COLUMNS = {"pdf_parser_warning_count"}
+ARTIFACT_CONTEXT_WINDOW = 4
+ARTIFACT_CONTEXT_WORDS = {"table", "tables", "figure", "fig", "fig.", "figures", "appendix", "appendices"}
 LEAKY_TEXT_RE = re.compile(
     r"(?i)(acknowledg|author contribution|corresponding author|equal contribution|affiliation|"
     r"anonymous|openreview|accepted|published|camera[- ]?ready|under review|submitted|submission|"
@@ -44,6 +46,12 @@ PAGE_MARKER_RE = re.compile(r"(?i)\bpage\s+(?:table|fig(?:ure)?|[0-9]{1,4})\b")
 ZERO_PADDED_PAGE_RE = re.compile(r"\b0\d{2,3}\b")
 YEAR_TOKEN_RE = re.compile(r"\b20\d{2}[a-z]?\b", re.I)
 DOI_TOKEN_RE = re.compile(r"(?i)\bdoi\b(?::\s*\S+)?")
+NUMERIC_ARTIFACT_TOKEN_RE = re.compile(
+    r"(?i)^[+-]?(?:\d+|\d+\.\d+|\d+(?:,\d{3})+)(?:%|[a-z])?$|"
+    r"^[+-]?\d+(?:[.-]\d+){1,}(?:%|[a-z])?$|"
+    r"^[+-]?\d+[-/]\d+(?:[-/]\d+)*(?:%|[a-z])?$"
+)
+CONTEXT_INDEX_TOKEN_RE = re.compile(r"(?i)^(?:[a-z][.-])?\d+(?:[.-]\d+)*(?:[a-z])?$")
 
 
 def _paper_id(record: Any) -> str:
@@ -70,11 +78,43 @@ def scrub_artifact_model_text(text: str) -> str:
     text = ZERO_PADDED_PAGE_RE.sub(" ", text)
     text = DOI_TOKEN_RE.sub(" ", text)
     text = YEAR_TOKEN_RE.sub(" ", text)
-    return " ".join(text.split())
+    tokens = text.split()
+    normalized = [_normalize_artifact_token(token) for token in tokens]
+    context_positions = [idx for idx, token in enumerate(normalized) if token in ARTIFACT_CONTEXT_WORDS]
+    cleaned = []
+    for idx, token in enumerate(tokens):
+        normalized_token = normalized[idx]
+        if _is_numeric_artifact_token(normalized_token):
+            continue
+        if _is_context_index_token(normalized_token) and any(abs(idx - pos) <= ARTIFACT_CONTEXT_WINDOW for pos in context_positions):
+            continue
+        cleaned.append(token)
+    return " ".join(cleaned)
 
 
 def drop_artifact_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=[c for c in ARTIFACT_NUMERIC_COLUMNS if c in df.columns])
+
+
+def fast_text_output_suffix(mode: str, drop_artifact_features: bool, include_numeric: bool) -> str:
+    parts = [mode]
+    if drop_artifact_features:
+        parts.append("strict_artifact_scrubbed")
+    if not include_numeric:
+        parts.append("text_only")
+    return "_".join(parts)
+
+
+def _normalize_artifact_token(token: str) -> str:
+    return token.strip(" \t\r\n\"'`“”‘’()[]{}<>.,;:!?").lower()
+
+
+def _is_numeric_artifact_token(token: str) -> bool:
+    return bool(token and NUMERIC_ARTIFACT_TOKEN_RE.fullmatch(token))
+
+
+def _is_context_index_token(token: str) -> bool:
+    return bool(token and CONTEXT_INDEX_TOKEN_RE.fullmatch(token))
 
 
 def payload_text(payload: dict[str, Any], mode: str, drop_artifact_features: bool = False) -> str:
@@ -207,11 +247,14 @@ class FastTextEvidenceProductionModel:
     calibrator: Any | None
     name: str = "fast_text_evidence"
     drop_artifact_features: bool = False
+    include_numeric: bool = True
 
     def _matrix(self, payloads: list[dict[str, Any]], numeric_df: pd.DataFrame):
         drop_artifacts = bool(getattr(self, "drop_artifact_features", False))
         texts = [payload_text(payload, self.mode, drop_artifact_features=drop_artifacts) for payload in payloads]
         X_text = self.vectorizer.transform(texts)
+        if not bool(getattr(self, "include_numeric", True)):
+            return X_text
         X_num = self.scaler.transform(numeric_df.reindex(columns=self.numeric_columns, fill_value=0.0).values)
         return hstack([X_text, csr_matrix(X_num)], format="csr")
 
@@ -330,6 +373,7 @@ def train_fast_text_evidence_model(
     train_limit: int = 1200,
     mode: str = "evidence_tables_safe",
     drop_artifact_features: bool = False,
+    include_numeric: bool = True,
 ) -> dict[str, Any]:
     cfg = load_config()
     seed = int(cfg["models"].get("random_seed", 42))
@@ -376,8 +420,14 @@ def train_fast_text_evidence_model(
         scaler = StandardScaler()
         X_text_tr = vectorizer.fit_transform([train_texts[i] for i in tr])
         X_text_va = vectorizer.transform([train_texts[i] for i in va])
-        X_num_tr = scaler.fit_transform(X_train.iloc[tr].values)
-        X_num_va = scaler.transform(X_train.iloc[va].values)
+        if include_numeric:
+            X_num_tr = scaler.fit_transform(X_train.iloc[tr].values)
+            X_num_va = scaler.transform(X_train.iloc[va].values)
+            X_fold_tr = hstack([X_text_tr, csr_matrix(X_num_tr)], format="csr")
+            X_fold_va = hstack([X_text_va, csr_matrix(X_num_va)], format="csr")
+        else:
+            X_fold_tr = X_text_tr
+            X_fold_va = X_text_va
         model = SGDClassifier(
             loss="log_loss",
             alpha=5e-5,
@@ -389,8 +439,8 @@ def train_fast_text_evidence_model(
             average=True,
             random_state=seed + fold_idx,
         )
-        model.fit(hstack([X_text_tr, csr_matrix(X_num_tr)], format="csr"), y_train[tr])
-        oof[va] = model.predict_proba(hstack([X_text_va, csr_matrix(X_num_va)], format="csr"))[:, 1]
+        model.fit(X_fold_tr, y_train[tr])
+        oof[va] = model.predict_proba(X_fold_va)[:, 1]
 
     calibration_kind, calibrator, calibrated_oof, calibration_loss = _fit_best_calibrator(y_train, oof)
     blend_alpha, train_blend_loss = _best_alpha(y_train, base_train, calibrated_oof)
@@ -407,8 +457,16 @@ def train_fast_text_evidence_model(
     scaler = StandardScaler()
     X_text_train = vectorizer.fit_transform(train_texts)
     X_text_test = vectorizer.transform(test_texts)
-    X_num_train = scaler.fit_transform(X_train.values)
-    X_num_test = scaler.transform(X_test.values)
+    if include_numeric:
+        X_num_train = scaler.fit_transform(X_train.values)
+        X_num_test = scaler.transform(X_test.values)
+        X_final_train = hstack([X_text_train, csr_matrix(X_num_train)], format="csr")
+        X_final_test = hstack([X_text_test, csr_matrix(X_num_test)], format="csr")
+        numeric_columns = list(X_train.columns)
+    else:
+        X_final_train = X_text_train
+        X_final_test = X_text_test
+        numeric_columns = []
     final_model = SGDClassifier(
         loss="log_loss",
         alpha=5e-5,
@@ -420,8 +478,8 @@ def train_fast_text_evidence_model(
         average=True,
         random_state=seed,
     )
-    final_model.fit(hstack([X_text_train, csr_matrix(X_num_train)], format="csr"), y_train)
-    raw_test = final_model.predict_proba(hstack([X_text_test, csr_matrix(X_num_test)], format="csr"))[:, 1]
+    final_model.fit(X_final_train, y_train)
+    raw_test = final_model.predict_proba(X_final_test)[:, 1]
     p_test = _apply_calibrator(calibration_kind, calibrator, raw_test)
     p_blend = np.clip((1.0 - blend_alpha) * base_test + blend_alpha * p_test, 1e-6, 1 - 1e-6)
 
@@ -430,17 +488,21 @@ def train_fast_text_evidence_model(
         vectorizer=vectorizer,
         scaler=scaler,
         model=final_model,
-        numeric_columns=list(X_train.columns),
+        numeric_columns=numeric_columns,
         blend_alpha=blend_alpha,
         calibration_kind=calibration_kind,
         calibrator=calibrator,
         drop_artifact_features=drop_artifact_features,
+        include_numeric=include_numeric,
     )
     out_dir = ensure_dir(resolve_path(cfg, "model_dir"))
+    suffix = fast_text_output_suffix(mode, drop_artifact_features=drop_artifact_features, include_numeric=include_numeric)
+    joblib.dump(production_model, out_dir / f"fulltext_text_evidence_model_{suffix}.pkl")
     joblib.dump(production_model, out_dir / "fulltext_text_evidence_model.pkl")
     metrics = {
         "mode": mode,
         "drop_artifact_features": drop_artifact_features,
+        "include_numeric": include_numeric,
         "artifact_numeric_columns_dropped": sorted(ARTIFACT_NUMERIC_COLUMNS if drop_artifact_features else []),
         "train_limit": train_limit,
         "num_train_parsed": len(train_records),
@@ -456,7 +518,6 @@ def train_fast_text_evidence_model(
         "blend_on_test": _metrics(y_test, p_blend),
     }
     dump_json(out_dir / "fast_text_evidence_metrics.json", metrics)
-    suffix = f"{mode}_artifact_scrubbed" if drop_artifact_features else mode
     dump_json(out_dir / f"fast_text_evidence_metrics_{suffix}.json", metrics)
     pd.DataFrame(
         {
@@ -467,6 +528,15 @@ def train_fast_text_evidence_model(
             "text_evidence_blend": p_blend,
         }
     ).to_csv(out_dir / "fast_text_evidence_test_predictions.csv", index=False)
+    pd.DataFrame(
+        {
+            "paper_id": [r.paper_id for r in test_records],
+            "label": y_test,
+            "base": base_test,
+            "text_evidence": p_test,
+            "text_evidence_blend": p_blend,
+        }
+    ).to_csv(out_dir / f"fast_text_evidence_test_predictions_{suffix}.csv", index=False)
     return metrics
 
 
