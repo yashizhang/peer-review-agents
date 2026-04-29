@@ -108,8 +108,9 @@ def run_marker_for_paper(
 
 
 def run_postprocess(paper_id: str, marker_root: Path, output_root: Path) -> tuple[bool, str]:
+    python_bin = os.environ.get("PYTHON_BIN", "python")
     command = [
-        "python",
+        python_bin,
         str(Path(__file__).resolve().parents[1] / "postprocess_marker_v3.py"),
         "--input-root",
         _safe_path(marker_root),

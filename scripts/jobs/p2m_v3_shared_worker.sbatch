@@ -38,7 +38,14 @@ export WANDB_CACHE_DIR=/network/scratch/j/jianan.zhao/.cache/reviewagent/wandb
 export TORCH_DEVICE=cuda
 
 cd "${PROJECT_ROOT}"
-PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv/bin/python}"
+PROJECT_VENV="${PROJECT_ROOT}/.venv/bin/python"
+if [[ -x "${PROJECT_VENV}" ]]; then
+  PYTHON_BIN="${PROJECT_VENV}"
+else
+  PYTHON_BIN="${PYTHON_BIN:-python}"
+fi
+export PYTHON_BIN
+
 ${PYTHON_BIN} scripts/jobs/p2m_v3_shared_worker.py \
   --run-root "${RUN_ROOT}" \
   --run-name "${RUN_NAME}" \
