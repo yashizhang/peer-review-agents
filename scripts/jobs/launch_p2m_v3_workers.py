@@ -17,6 +17,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--short-unkillable-workers", type=int, default=4)
     parser.add_argument("--short-partition", type=str, default="short-unkillable")
     parser.add_argument("--rest-partition", type=str, default="unkillable")
+    parser.add_argument("--short-time", type=str, default="03:00:00")
+    parser.add_argument("--rest-time", type=str, default="2-00:00:00")
     parser.add_argument(
         "--submit-command",
         type=str,
@@ -26,24 +28,46 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _submit_one(
+def _sbatch_time_args(time_limit: str, partition: str) -> list[str]:
+    return [f"--time={time_limit}", f"--partition={partition}"]
+
+
+def _build_submit_command(
     *,
+    args: argparse.Namespace,
     partition: str,
     shard_index: int,
     job_name: str,
-    args: argparse.Namespace,
-) -> str:
+    time_limit: str,
+) -> list[str]:
     run_dir = args.run_root / args.run_name
     log_dir = run_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     cmd = [
         args.submit_command,
-        f"--partition={partition}",
         f"--job-name={job_name}",
         f"--output={log_dir}/p2m_v3_{args.run_name.replace('/', '_')}_{shard_index}_%j.out",
         f"--error={log_dir}/p2m_v3_{args.run_name.replace('/', '_')}_{shard_index}_%j.err",
         "scripts/jobs/p2m_v3_shared_worker.sbatch",
     ]
+    return cmd[:1] + _sbatch_time_args(time_limit, partition) + cmd[1:]
+
+
+def _submit_one(
+    *,
+    partition: str,
+    shard_index: int,
+    job_name: str,
+    time_limit: str,
+    args: argparse.Namespace,
+) -> str:
+    cmd = _build_submit_command(
+        args=args,
+        partition=partition,
+        shard_index=shard_index,
+        job_name=job_name,
+        time_limit=time_limit,
+    )
     env = {
         "RUN_ROOT": str(args.run_root),
         "RUN_NAME": args.run_name,
@@ -79,8 +103,15 @@ def main() -> None:
     run_name_slug = args.run_name.replace("/", "_")
     for shard_index in range(args.shard_count):
         partition = args.short_partition if shard_index < short_count else args.rest_partition
+        time_limit = args.short_time if shard_index < short_count else args.rest_time
         job_name = f"p2m_v3_{run_name_slug}_{shard_index}"
-        job_id = _submit_one(partition=partition, shard_index=shard_index, job_name=job_name, args=args)
+        job_id = _submit_one(
+            partition=partition,
+            time_limit=time_limit,
+            shard_index=shard_index,
+            job_name=job_name,
+            args=args,
+        )
         job_ids.append(job_id)
         print(f"submitted shard={shard_index} partition={partition} job_id={job_id}")
 
