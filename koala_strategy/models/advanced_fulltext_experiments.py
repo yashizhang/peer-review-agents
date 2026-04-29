@@ -32,6 +32,7 @@ from koala_strategy.utils import dump_json, ensure_dir
 
 
 SAFE_SUFFIX = "_safe"
+ARTIFACT_NUMERIC_COLUMNS = {"pdf_parser_warning_count"}
 LEAKY_TEXT_RE = re.compile(
     r"(?i)(acknowledg|author contribution|corresponding author|equal contribution|affiliation|"
     r"anonymous|openreview|accepted|published|camera[- ]?ready|under review|submitted|submission|"
@@ -39,6 +40,10 @@ LEAKY_TEXT_RE = re.compile(
 )
 EMAIL_RE = re.compile(r"(?i)\b[\w.+-]+@[\w.-]+\.[a-z]{2,}\b")
 URL_RE = re.compile(r"(?i)\bhttps?://\S+")
+PAGE_MARKER_RE = re.compile(r"(?i)\bpage\s+(?:table|fig(?:ure)?|[0-9]{1,4})\b")
+ZERO_PADDED_PAGE_RE = re.compile(r"\b0\d{2,3}\b")
+YEAR_TOKEN_RE = re.compile(r"\b20\d{2}[a-z]?\b", re.I)
+DOI_TOKEN_RE = re.compile(r"(?i)\bdoi\b(?::\s*\S+)?")
 
 
 def _paper_id(record: Any) -> str:
@@ -60,7 +65,19 @@ def scrub_leaky_model_text(text: str) -> str:
     return sanitize_model_text(text)
 
 
-def payload_text(payload: dict[str, Any], mode: str) -> str:
+def scrub_artifact_model_text(text: str) -> str:
+    text = PAGE_MARKER_RE.sub(" ", text)
+    text = ZERO_PADDED_PAGE_RE.sub(" ", text)
+    text = DOI_TOKEN_RE.sub(" ", text)
+    text = YEAR_TOKEN_RE.sub(" ", text)
+    return " ".join(text.split())
+
+
+def drop_artifact_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop(columns=[c for c in ARTIFACT_NUMERIC_COLUMNS if c in df.columns])
+
+
+def payload_text(payload: dict[str, Any], mode: str, drop_artifact_features: bool = False) -> str:
     safe_mode = mode.endswith(SAFE_SUFFIX)
     if safe_mode:
         mode = mode[: -len(SAFE_SUFFIX)]
@@ -71,20 +88,23 @@ def payload_text(payload: dict[str, Any], mode: str) -> str:
     table_text = "\n".join(str(t.get("caption_or_context", "")) for t in payload.get("table_evidence") or [])
     figure_text = "\n".join(payload.get("figure_captions") or [])
     if safe_mode:
-        return _trim(sanitized_fulltext_payload({**payload, "sections": sections}, mode), 90000)
+        text = _trim(sanitized_fulltext_payload({**payload, "sections": sections}, mode), 90000)
+        return scrub_artifact_model_text(text) if drop_artifact_features else text
     if mode == "tables":
-        return _trim("\n".join([title, abstract, table_text]), 40000)
-    if mode == "sections":
+        text = _trim("\n".join([title, abstract, table_text]), 40000)
+    elif mode == "sections":
         selected = []
         for key in ["abstract", "introduction", "method", "methods", "approach", "experiments", "results", "discussion", "limitations", "conclusion"]:
             if key in sections:
                 selected.append(str(sections[key]))
-        return _trim("\n".join([title, abstract, "\n".join(selected), table_text]), 70000)
-    if mode == "evidence":
-        return _trim("\n".join([title, abstract, table_text, figure_text]), 50000)
-    if mode == "evidence_tables":
-        return _trim("\n".join([title, abstract, table_text]), 50000)
-    return _trim("\n".join([title, abstract, full_text]), 90000)
+        text = _trim("\n".join([title, abstract, "\n".join(selected), table_text]), 70000)
+    elif mode == "evidence":
+        text = _trim("\n".join([title, abstract, table_text, figure_text]), 50000)
+    elif mode == "evidence_tables":
+        text = _trim("\n".join([title, abstract, table_text]), 50000)
+    else:
+        text = _trim("\n".join([title, abstract, full_text]), 90000)
+    return scrub_artifact_model_text(text) if drop_artifact_features else text
 
 
 def parsed_records(records: list[Any]) -> tuple[list[Any], list[dict[str, Any]]]:
@@ -106,6 +126,7 @@ class SparseTextModel:
     max_features: int = 120000
     random_seed: int = 42
     c_value: float = 1.0
+    drop_artifact_features: bool = False
 
     def __post_init__(self) -> None:
         self.vectorizer = TfidfVectorizer(
@@ -141,7 +162,8 @@ class SparseTextModel:
             )
 
     def _texts(self, payloads: list[dict[str, Any]]) -> list[str]:
-        return [payload_text(payload, self.mode) for payload in payloads]
+        drop_artifacts = bool(getattr(self, "drop_artifact_features", False))
+        return [payload_text(payload, self.mode, drop_artifact_features=drop_artifacts) for payload in payloads]
 
     def _matrix(self, payloads: list[dict[str, Any]], numeric_df: pd.DataFrame, fit: bool = False):
         X_text = self.vectorizer.fit_transform(self._texts(payloads)) if fit else self.vectorizer.transform(self._texts(payloads))
@@ -184,9 +206,11 @@ class FastTextEvidenceProductionModel:
     calibration_kind: str
     calibrator: Any | None
     name: str = "fast_text_evidence"
+    drop_artifact_features: bool = False
 
     def _matrix(self, payloads: list[dict[str, Any]], numeric_df: pd.DataFrame):
-        texts = [payload_text(payload, self.mode) for payload in payloads]
+        drop_artifacts = bool(getattr(self, "drop_artifact_features", False))
+        texts = [payload_text(payload, self.mode, drop_artifact_features=drop_artifacts) for payload in payloads]
         X_text = self.vectorizer.transform(texts)
         X_num = self.scaler.transform(numeric_df.reindex(columns=self.numeric_columns, fill_value=0.0).values)
         return hstack([X_text, csr_matrix(X_num)], format="csr")
@@ -229,6 +253,7 @@ def _oof_text_model(
     include_numeric: bool,
     c_value: float,
     random_seed: int,
+    drop_artifact_features: bool = False,
 ) -> tuple[np.ndarray, SparseTextModel]:
     folds = min(3, max(2, np.bincount(y).min()))
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=random_seed)
@@ -241,6 +266,7 @@ def _oof_text_model(
             include_numeric=include_numeric,
             c_value=c_value,
             random_seed=random_seed,
+            drop_artifact_features=drop_artifact_features,
         )
         model.fit(list(payloads_arr[tr]), numeric_df.iloc[tr], y[tr])
         oof[va] = model.predict_proba(list(payloads_arr[va]), numeric_df.iloc[va])
@@ -250,6 +276,7 @@ def _oof_text_model(
         include_numeric=include_numeric,
         c_value=c_value,
         random_seed=random_seed,
+        drop_artifact_features=drop_artifact_features,
     ).fit(payloads, numeric_df, y)
     return oof, final
 
@@ -299,7 +326,11 @@ def _apply_calibrator(kind: str, calibrator: Any | None, p: np.ndarray) -> np.nd
     return p
 
 
-def train_fast_text_evidence_model(train_limit: int = 1200, mode: str = "evidence_tables_safe") -> dict[str, Any]:
+def train_fast_text_evidence_model(
+    train_limit: int = 1200,
+    mode: str = "evidence_tables_safe",
+    drop_artifact_features: bool = False,
+) -> dict[str, Any]:
     cfg = load_config()
     seed = int(cfg["models"].get("random_seed", 42))
     examples = select_train_subset(load_iclr_examples(config=cfg), train_limit, seed)
@@ -313,6 +344,9 @@ def train_fast_text_evidence_model(train_limit: int = 1200, mode: str = "evidenc
     test_records, test_payloads = parsed_records(labeled)
     X_train, train_records2 = build_fulltext_feature_frame(train_records, artifacts)
     X_test, test_records2 = build_fulltext_feature_frame(test_records, artifacts)
+    if drop_artifact_features:
+        X_train = drop_artifact_numeric_columns(X_train)
+        X_test = drop_artifact_numeric_columns(X_test)
     id_to_payload_train = {_paper_id(r): p for r, p in zip(train_records, train_payloads)}
     id_to_payload_test = {_paper_id(r): p for r, p in zip(test_records, test_payloads)}
     train_payloads = [id_to_payload_train[_paper_id(r)] for r in train_records2]
@@ -323,8 +357,8 @@ def train_fast_text_evidence_model(train_limit: int = 1200, mode: str = "evidenc
     y_test = np.asarray([int(labels[r.paper_id]["accept_label"]) for r in test_records], dtype=int)
     base_train = X_train["base_p_accept"].to_numpy()
     base_test = X_test["base_p_accept"].to_numpy()
-    train_texts = [payload_text(payload, mode) for payload in train_payloads]
-    test_texts = [payload_text(payload, mode) for payload in test_payloads]
+    train_texts = [payload_text(payload, mode, drop_artifact_features=drop_artifact_features) for payload in train_payloads]
+    test_texts = [payload_text(payload, mode, drop_artifact_features=drop_artifact_features) for payload in test_payloads]
 
     folds = min(3, max(2, np.bincount(y_train).min()))
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=seed)
@@ -400,11 +434,14 @@ def train_fast_text_evidence_model(train_limit: int = 1200, mode: str = "evidenc
         blend_alpha=blend_alpha,
         calibration_kind=calibration_kind,
         calibrator=calibrator,
+        drop_artifact_features=drop_artifact_features,
     )
     out_dir = ensure_dir(resolve_path(cfg, "model_dir"))
     joblib.dump(production_model, out_dir / "fulltext_text_evidence_model.pkl")
     metrics = {
         "mode": mode,
+        "drop_artifact_features": drop_artifact_features,
+        "artifact_numeric_columns_dropped": sorted(ARTIFACT_NUMERIC_COLUMNS if drop_artifact_features else []),
         "train_limit": train_limit,
         "num_train_parsed": len(train_records),
         "num_test_parsed": len(test_records),
@@ -419,7 +456,8 @@ def train_fast_text_evidence_model(train_limit: int = 1200, mode: str = "evidenc
         "blend_on_test": _metrics(y_test, p_blend),
     }
     dump_json(out_dir / "fast_text_evidence_metrics.json", metrics)
-    dump_json(out_dir / f"fast_text_evidence_metrics_{mode}.json", metrics)
+    suffix = f"{mode}_artifact_scrubbed" if drop_artifact_features else mode
+    dump_json(out_dir / f"fast_text_evidence_metrics_{suffix}.json", metrics)
     pd.DataFrame(
         {
             "paper_id": [r.paper_id for r in test_records],

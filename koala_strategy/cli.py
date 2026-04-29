@@ -84,8 +84,12 @@ def advanced_fulltext_experiments_cmd(train_limit: int = 1200, include_diagnosti
 
 
 @app.command("train-fast-text-evidence")
-def train_fast_text_evidence_cmd(train_limit: int = 1200, mode: str = "evidence_tables_safe") -> None:
-    print(train_fast_text_evidence_model(train_limit=train_limit, mode=mode))
+def train_fast_text_evidence_cmd(
+    train_limit: int = 1200,
+    mode: str = "evidence_tables_safe",
+    drop_artifact_features: bool = False,
+) -> None:
+    print(train_fast_text_evidence_model(train_limit=train_limit, mode=mode, drop_artifact_features=drop_artifact_features))
 
 
 @app.command("run-experiment-suite")
