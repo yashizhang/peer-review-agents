@@ -114,7 +114,32 @@ V3 的核心原则：
 正式 cache 根目录放在 Mila scratch，不提交 Git：
 
 ```text
-data/pdf_parse_cache/{run_name}/
+data/processed_papers/
+  icml26/
+    {paper_id}/...
+  iclr26/
+    {paper_id}/...
+  {run_name}/
+    input_manifest.json
+    raw/
+      {paper_id}.pdf
+    marker_raw/
+      {paper_id}/
+        parse_report.json
+        marker_markdown/
+          {paper_id}/
+            {paper_id}.md
+            {paper_id}_meta.json
+            *.jpeg
+        marker_chunks/
+          {paper_id}/
+            {paper_id}.json
+    processed_v3/
+      {paper_id}/...
+    processed_v3_summary.json
+
+也可以保留运行快照目录：
+data/processed_papers/{run_name}/
   input_manifest.json
   raw/
     {paper_id}.pdf
@@ -157,12 +182,24 @@ data/pdf_parse_cache/{run_name}/
   "paper_id": "Dp1RM3gPg8",
   "source": "iclr_public_test",
   "title": "Fast Proteome-Scale Protein Interaction Retrieval via Residue-Level Factorization",
-  "pdf_path": "data/pdf_parse_cache/<run_name>/raw/Dp1RM3gPg8.pdf",
+  "pdf_path": "data/processed_papers/<run_name>/raw/Dp1RM3gPg8.pdf",
   "url": "https://openreview.net/pdf?id=Dp1RM3gPg8",
   "bytes": 1474383,
   "sha256": "..."
 }
 ```
+
+### 生产流水线脚本
+
+已新增一组 V3 批处理脚本（均在 `scripts/` 下）：
+
+- `scripts/build_parse_manifests.py`：从官方队列 CSV / ICLR JSONL 生成 manifest。
+- `scripts/jobs/p2m_v3_shared_worker.py`：单个分片 worker，下载 PDF、跑 Marker（markdown/chunks）、postprocess、写 summary。
+- `scripts/jobs/p2m_v3_shared_worker.sbatch`：Slurm 模板。
+- `scripts/jobs/launch_p2m_v3_workers.py`：提交多 shard job（默认 4 个 `short-unkillable` + 剩余 `unkillable`）。
+- `scripts/jobs/monitor_parse_jobs.py`：5 分钟轮询任务状态。
+- `scripts/jobs/consolidate_p2m_v3_run.py`：将一轮 run 的 `processed_v3` 结果同步到 `data/processed_papers/{subset}/{paper_id}`。
+- `scripts/upload_processed_to_hf.py`：将 `icml26/{paper_id}`、`iclr26/{paper_id}` 上传到 `jzshared/agent_paper_review`。
 
 Koala/ICML26 的 `pdf_url` 可能是 `/storage/pdfs/<uuid>.pdf` 这种相对路径；下载时要拼接 Koala storage base URL。ICLR26 使用 OpenReview absolute PDF URL。
 
@@ -191,6 +228,61 @@ Marker raw parse 使用项目环境里的 binary：
 
 ```bash
 /network/scratch/j/jianan.zhao/ReviewAgent/.venv/bin/marker_single
+```
+
+### 一条命令链（推荐）
+
+按时间顺序（越新的越早）处理 ICML in-review 截点论文：
+
+```bash
+RUN_NAME=icml26_20260429_review
+MANIFEST=data/processed_papers/manifests/icml26_due_queue.json
+mkdir -p data/processed_papers/manifests
+
+python scripts/build_parse_manifests.py icml \
+  --csv data/koala_cache/reports/koala_in_review_paper_review_close_times_20260429_1417_montreal.csv \
+  --output ${MANIFEST}
+
+python - <<PY
+from pathlib import Path
+import json
+manifest = json.loads(Path("${MANIFEST}").read_text())
+# 写入按时间倒序的待处理 manifest（已按时间排序）
+print(json.dumps({"n": len(manifest)}, indent=2))
+PY
+
+python scripts/jobs/launch_p2m_v3_workers.py \
+  --run-root data/processed_papers \
+  --run-name ${RUN_NAME} \
+  --manifest ${MANIFEST} \
+  --shard-count 5 \
+  --short-unkillable-workers 4 \
+  --short-partition short-unkillable \
+  --rest-partition unkillable \
+  --marker-timeout-seconds 240 \
+  --max-retries 2
+```
+
+监控：
+
+```bash
+python scripts/jobs/monitor_parse_jobs.py --once --run-name ${RUN_NAME} --run-root data/processed_papers <job_id_0> <job_id_1> ...
+```
+
+### Consolidate + 上传 HF
+
+```bash
+python scripts/jobs/consolidate_p2m_v3_run.py \
+  --run-root data/processed_papers \
+  --run-name ${RUN_NAME} \
+  --subset icml26 \
+  --overwrite
+
+python scripts/upload_processed_to_hf.py \
+  --dataset-root data/processed_papers \
+  --hf-repo jzshared/agent_paper_review \
+  --subset icml26 \
+  --token $HF_TOKEN
 ```
 
 ### Stage 0: Inventory
@@ -226,8 +318,8 @@ created_at / updated_at
 
 ```bash
 PAPER_ID=Dp1RM3gPg8
-PDF=data/pdf_parse_cache/<run_name>/raw/${PAPER_ID}.pdf
-RAW_ROOT=data/pdf_parse_cache/<run_name>/marker_raw/${PAPER_ID}
+PDF=data/processed_papers/<run_name>/raw/${PAPER_ID}.pdf
+RAW_ROOT=data/processed_papers/<run_name>/marker_raw/${PAPER_ID}
 
 mkdir -p "${RAW_ROOT}/marker_markdown" "${RAW_ROOT}/marker_chunks"
 
@@ -267,20 +359,20 @@ Marker raw parse 完成后，用 repo script 生成最终 model-facing artifacts
 
 ```bash
 python scripts/postprocess_marker_v3.py \
-  --input-root data/pdf_parse_cache/<run_name>/marker_raw \
-  --output-root data/pdf_parse_cache/<run_name>/processed_v3 \
+  --input-root data/processed_papers/<run_name>/marker_raw \
+  --output-root data/processed_papers/<run_name>/processed_v3 \
   --copy-assets-all \
-  --summary-path data/pdf_parse_cache/<run_name>/processed_v3_summary.json
+  --summary-path data/processed_papers/<run_name>/processed_v3_summary.json
 ```
 
 也可以只处理特定 paper：
 
 ```bash
 python scripts/postprocess_marker_v3.py \
-  --input-root data/pdf_parse_cache/<run_name>/marker_raw \
-  --output-root data/pdf_parse_cache/<run_name>/processed_v3 \
+  --input-root data/processed_papers/<run_name>/marker_raw \
+  --output-root data/processed_papers/<run_name>/processed_v3 \
   --paper-id Dp1RM3gPg8 \
-  --summary-path data/pdf_parse_cache/<run_name>/processed_v3_summary.json
+  --summary-path data/processed_papers/<run_name>/processed_v3_summary.json
 ```
 
 V3 postprocess 做的事情：
@@ -310,7 +402,7 @@ python - <<'PY'
 import json
 from pathlib import Path
 
-summary = json.loads(Path("data/pdf_parse_cache/<run_name>/processed_v3_summary.json").read_text())
+summary = json.loads(Path("data/processed_papers/<run_name>/processed_v3_summary.json").read_text())
 print("papers", len(summary))
 print("ok", sum(1 for row in summary if row.get("ok")))
 for row in summary:
@@ -371,9 +463,9 @@ raw_records with labels/reviews/decisions
 最新 10 篇 Mila smoke：
 
 ```text
-run root: data/pdf_parse_cache/v3_smoke_10/
-final root: data/pdf_parse_cache/v3_smoke_10/processed_v3/
-summary:   data/pdf_parse_cache/v3_smoke_10/processed_v3_summary.json
+run root: data/processed_papers/v3_smoke_10/
+final root: data/processed_papers/v3_smoke_10/processed_v3/
+summary:   data/processed_papers/v3_smoke_10/processed_v3_summary.json
 commit:    8c66f3a
 result:    10 papers / ok 10
 ```
