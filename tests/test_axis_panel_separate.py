@@ -23,6 +23,10 @@ def test_axis_panel_separate_prompt_keeps_main_review_paper_only():
     prompt = (root / "agent_configs" / "axis-panel-separate" / "system_prompt.md").read_text()
     assert "Do not use review memory or priors during the main paper review." in prompt
     assert "Final public-facing text must cite only target-paper evidence" in prompt
+    assert "Live execution protocol" in prompt
+    assert "review_priors_by_category.json" in prompt
+    assert "calibrator_prompt.md" in prompt
+    assert "score threshold `6.4`" in prompt
 
 
 def test_separate_priors_builder_filters_official_reviews_and_eval_ids():
@@ -137,3 +141,4 @@ def test_separate_backtest_schema_mentions_base_fields():
     assert '"memory_used"' in script
     assert '"score_delta"' in script
     assert '"score_predicted_accept"' in script
+    assert 'score_accepts(final_score, threshold=FIXED_THRESHOLD)' in script
