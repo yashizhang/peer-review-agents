@@ -21,10 +21,15 @@ DEFAULT_LEAK_TERMS = [
     "Anonymous Authors",
     "ACKNOWLEDGMENT",
     "OpenReview",
-    "Accepted",
-    "Reject",
+    '"accept_label"',
+    '"decision"',
+    '"decision_tier"',
+    '"source_status"',
     "Meta-review",
     "Official Review",
+    "official_reviews",
+    "meta_reviews",
+    "suggested_verdict_score",
 ]
 
 
