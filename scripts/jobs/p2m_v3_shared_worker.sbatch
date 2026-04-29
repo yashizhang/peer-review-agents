@@ -20,10 +20,17 @@ MAX_RETRIES="${MAX_RETRIES:-2}"
 LOG_DIR="${RUN_ROOT}/${RUN_NAME}/logs"
 mkdir -p "${LOG_DIR}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Use SLURM submission directory or explicit override as the project root.
 PROJECT_ROOT="${PROJECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"
 PROJECT_ROOT="$(cd "${PROJECT_ROOT}" && pwd)"
+
+# Prefer project virtualenv marker binary if available.
+PROJECT_MARKER_BIN="${PROJECT_ROOT}/.venv/bin/marker_single"
+if [[ -x "${PROJECT_MARKER_BIN}" ]]; then
+  MARKER_BIN="${MARKER_BIN:-${PROJECT_MARKER_BIN}}"
+fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${PROJECT_ROOT}"
 source /network/scratch/j/jianan.zhao/Utils/shell/init.sh ReviewAgent
 

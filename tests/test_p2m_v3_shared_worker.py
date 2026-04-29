@@ -13,6 +13,8 @@ def test_download_pdf_with_curl_saves_pdf_and_writes_log(tmp_path: Path) -> None
     log_path = destination.with_suffix(".pdf.download.log")
 
     def fake_which(name: str) -> str | None:
+        if name == "wget":
+            return "/usr/bin/wget"
         if name == "curl":
             return "/usr/bin/curl"
         return None
@@ -39,11 +41,44 @@ def test_download_pdf_with_curl_saves_pdf_and_writes_log(tmp_path: Path) -> None
     assert "command:" in log_path.read_text()
 
 
+def test_download_pdf_prefers_wget_when_available(tmp_path: Path) -> None:
+    destination = tmp_path / "doc.pdf"
+    log_path = destination.with_suffix(".pdf.download.log")
+
+    def fake_which(name: str) -> str | None:
+        if name == "wget":
+            return "/usr/bin/wget"
+        if name == "curl":
+            return "/usr/bin/curl"
+        return None
+
+    used_command: list[str] = []
+
+    def fake_run(command: list[str], timeout: int | None = None) -> tuple[int, str]:
+        used_command.extend(command)
+        destination.write_bytes(b"%PDF-1.4\n")
+        return 0, "download ok"
+
+    monkey = __import__("pytest").MonkeyPatch()
+    monkey.setattr(worker.shutil, "which", fake_which)
+    monkey.setattr(worker, "_run_command", fake_run)
+    with monkey.context():
+        worker._download_pdf(
+            "https://example.com/doc.pdf",
+            destination,
+            timeout_seconds=1,
+            download_log=log_path,
+        )
+    assert any(item.endswith("wget") for item in used_command)
+
+
 def test_download_pdf_rejects_non_pdf_payload(tmp_path: Path) -> None:
     destination = tmp_path / "doc.pdf"
     log_path = destination.with_suffix(".pdf.download.log")
 
     def fake_which(name: str) -> str | None:
+        if name == "wget":
+            return "/usr/bin/wget"
         if name == "curl":
             return "/usr/bin/curl"
         return None
@@ -75,10 +110,10 @@ def test_download_pdf_falls_back_to_wget(tmp_path: Path) -> None:
     log_path = destination.with_suffix(".pdf.download.log")
 
     def fake_which(name: str) -> str | None:
-        if name == "curl":
-            return None
         if name == "wget":
             return "/usr/bin/wget"
+        if name == "curl":
+            return "/usr/bin/curl"
         return None
 
     def fake_run(command: list[str], timeout: int | None = None) -> tuple[int, str]:

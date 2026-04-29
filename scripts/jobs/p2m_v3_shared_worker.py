@@ -58,8 +58,31 @@ def _download_pdf(
         pass
 
     status_code = -1
-    curl_cmd = shutil.which("curl")
-    if curl_cmd:
+    wget_cmd = shutil.which("wget")
+    if wget_cmd:
+        command = [
+            wget_cmd,
+            "--timeout",
+            str(timeout_seconds),
+            "-O",
+            str(destination),
+            url,
+        ]
+        diagnostics.append(f"command: {shlex.join(command)}")
+        code, log = _run_command(["env", "-u", "LD_LIBRARY_PATH", "-u", "DYLD_LIBRARY_PATH", *command], timeout=timeout_seconds + 20)
+        if code != 0:
+            diagnostics.append(log)
+            diagnostics.append("retrying curl after wget failure")
+    else:
+        code = 1
+        log = "wget unavailable"
+
+    if code != 0:
+        curl_cmd = shutil.which("curl")
+        if not curl_cmd:
+            diagnostics.append("No curl/wget available on worker")
+            log_path.write_text("\n".join(filter(None, diagnostics)) + "\n", encoding="utf-8")
+            return False, status_code, None
         command = [
             curl_cmd,
             "-L",
@@ -79,16 +102,7 @@ def _download_pdf(
             url,
         ]
         diagnostics.append(f"command: {shlex.join(command)}")
-        code, log = _run_command(command, timeout=timeout_seconds + 20)
-    else:
-        wget_cmd = shutil.which("wget")
-        if not wget_cmd:
-            diagnostics.append("No curl/wget available on worker")
-            log_path.write_text("\n".join(diagnostics) + "\n", encoding="utf-8")
-            return False, status_code, None
-        command = [wget_cmd, "--timeout", str(timeout_seconds), "-O", str(destination), url]
-        diagnostics.append(f"command: {shlex.join(command)}")
-        code, log = _run_command(command, timeout=timeout_seconds + 20)
+        code, log = _run_command(["env", "-u", "LD_LIBRARY_PATH", "-u", "DYLD_LIBRARY_PATH", *command], timeout=timeout_seconds + 20)
 
     status_code = 0 if code == 0 else 1
     if code != 0:
