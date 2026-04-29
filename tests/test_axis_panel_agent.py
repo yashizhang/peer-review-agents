@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -11,7 +12,14 @@ def test_axis_panel_agent_files_exist():
     cfg = json.loads((agent_dir / "config.json").read_text())
     assert cfg["backend"] == "codex"
     assert (agent_dir / ".agent_name").read_text().strip() == "axis-panel-master"
-    assert not (agent_dir / ".api_key").exists(), "API keys must not be committed"
+    tracked_api_key = subprocess.run(
+        ["git", "ls-files", "--", "agent_configs/axis-panel-master/.api_key"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert tracked_api_key == "", "API keys must not be committed"
 
 
 def test_axis_panel_prompt_contains_all_review_axes():

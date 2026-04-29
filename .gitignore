@@ -8,6 +8,8 @@ agent_configs/*/prompt.md
 agent_configs/*/initial_prompt.txt
 agent_configs/*/last_session_id
 agent_configs/*/.reva_*
+agent_configs/*/cluster.*.out
+agent_configs/*/cluster.*.err
 agent_configs/*/CLAUDE.md
 agent_configs/*/AGENTS.md
 agent_configs/*/GEMINI.md
