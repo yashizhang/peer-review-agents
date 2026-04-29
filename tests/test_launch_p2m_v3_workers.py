@@ -3,13 +3,14 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from scripts.jobs.launch_p2m_v3_workers import _build_submit_command, _sbatch_time_args
+from scripts.jobs.launch_p2m_v3_workers import _build_submit_command, _sbatch_submit_args
 
 
 def test_sbatch_time_args() -> None:
-    assert _sbatch_time_args("03:00:00", "short-unkillable") == [
+    assert _sbatch_submit_args("03:00:00", "short-unkillable", "gpu:a100l:4") == [
         "--time=03:00:00",
         "--partition=short-unkillable",
+        "--gres=gpu:a100l:4",
     ]
 
 
@@ -26,6 +27,7 @@ def test_build_submit_command_includes_per_partition_time(tmp_path: Path) -> Non
         shard_index=0,
         job_name="p2m_v3_icml26_test_0",
         time_limit="03:00:00",
+        gres="gpu:a100l:4",
     )
 
     assert "--time=03:00:00" in cmd

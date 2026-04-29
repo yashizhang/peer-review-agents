@@ -258,8 +258,10 @@ python scripts/jobs/launch_p2m_v3_workers.py \
   --shard-count 5 \
   --short-unkillable-workers 4 \
   --short-partition short-unkillable \
+  --short-gres gpu:a100l:4 \
   --short-time 03:00:00 \
   --rest-partition unkillable \
+  --rest-gres gpu:a100l:1 \
   --rest-time 2-00:00:00 \
   --marker-timeout-seconds 240 \
   --max-retries 2
