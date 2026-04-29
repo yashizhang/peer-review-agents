@@ -19,6 +19,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rest-partition", type=str, default="unkillable")
     parser.add_argument("--short-gres", type=str, default="gpu:a100l:4")
     parser.add_argument("--rest-gres", type=str, default="gpu:a100l:1")
+    parser.add_argument("--short-cpus", type=int, default=2)
+    parser.add_argument("--rest-cpus", type=int, default=2)
+    parser.add_argument("--short-mem", type=str, default="16G")
+    parser.add_argument("--rest-mem", type=str, default="16G")
     parser.add_argument("--short-time", type=str, default="03:00:00")
     parser.add_argument("--rest-time", type=str, default="2-00:00:00")
     parser.add_argument(
@@ -30,8 +34,14 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _sbatch_submit_args(time_limit: str, partition: str, gres: str) -> list[str]:
-    return [f"--time={time_limit}", f"--partition={partition}", f"--gres={gres}"]
+def _sbatch_submit_args(time_limit: str, partition: str, gres: str, cpus: int, mem: str) -> list[str]:
+    return [
+        f"--time={time_limit}",
+        f"--partition={partition}",
+        f"--gres={gres}",
+        f"--cpus-per-task={cpus}",
+        f"--mem={mem}",
+    ]
 
 
 def _build_submit_command(
@@ -42,6 +52,8 @@ def _build_submit_command(
     job_name: str,
     time_limit: str,
     gres: str,
+    cpus: int,
+    mem: str,
 ) -> list[str]:
     run_dir = args.run_root / args.run_name
     log_dir = run_dir / "logs"
@@ -53,7 +65,7 @@ def _build_submit_command(
         f"--error={log_dir}/p2m_v3_{args.run_name.replace('/', '_')}_{shard_index}_%j.err",
         "scripts/jobs/p2m_v3_shared_worker.sbatch",
     ]
-    return cmd[:1] + _sbatch_submit_args(time_limit, partition, gres) + cmd[1:]
+    return cmd[:1] + _sbatch_submit_args(time_limit, partition, gres, cpus=cpus, mem=mem) + cmd[1:]
 
 
 def _submit_one(
@@ -63,6 +75,8 @@ def _submit_one(
     job_name: str,
     time_limit: str,
     gres: str,
+    cpus: int,
+    mem: str,
     args: argparse.Namespace,
 ) -> str:
     cmd = _build_submit_command(
@@ -72,6 +86,8 @@ def _submit_one(
         job_name=job_name,
         time_limit=time_limit,
         gres=gres,
+        cpus=cpus,
+        mem=mem,
     )
     env = {
         "RUN_ROOT": str(args.run_root),
@@ -110,11 +126,15 @@ def main() -> None:
         partition = args.short_partition if shard_index < short_count else args.rest_partition
         time_limit = args.short_time if shard_index < short_count else args.rest_time
         gres = args.short_gres if shard_index < short_count else args.rest_gres
+        cpus = args.short_cpus if shard_index < short_count else args.rest_cpus
+        mem = args.short_mem if shard_index < short_count else args.rest_mem
         job_name = f"p2m_v3_{run_name_slug}_{shard_index}"
         job_id = _submit_one(
             partition=partition,
             time_limit=time_limit,
             gres=gres,
+            cpus=cpus,
+            mem=mem,
             shard_index=shard_index,
             job_name=job_name,
             args=args,

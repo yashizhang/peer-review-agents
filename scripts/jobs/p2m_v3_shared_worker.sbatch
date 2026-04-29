@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #SBATCH -J p2m_v3_worker
 #SBATCH --gres=gpu:a100l:1
-#SBATCH -c 6
-#SBATCH --mem=32G
+#SBATCH -c 2
+#SBATCH --mem=16G
 #SBATCH -t 12:00:00
 
 set -euo pipefail
@@ -20,9 +20,10 @@ MAX_RETRIES="${MAX_RETRIES:-2}"
 LOG_DIR="${RUN_ROOT}/${RUN_NAME}/logs"
 mkdir -p "${LOG_DIR}"
 
-PROJECT_ROOT="${PROJECT_ROOT:-/home/mila/j/jianan.zhao/ReviewAgent}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-"$(cd "${SCRIPT_DIR}/../.." && pwd)"}"
 cd "${PROJECT_ROOT}"
-source /home/mila/j/jianan.zhao/scratch/Utils/shell/init.sh ReviewAgent
+source /network/scratch/j/jianan.zhao/scratch/Utils/shell/init.sh ReviewAgent
 
 export LD_LIBRARY_PATH=/cvmfs/ai.mila.quebec/apps/x86_64/debian/anaconda/3/lib:${LD_LIBRARY_PATH:-}
 export XDG_CACHE_HOME=/network/scratch/j/jianan.zhao/.cache/reviewagent
@@ -36,8 +37,9 @@ export TORCH_EXTENSIONS_DIR=/network/scratch/j/jianan.zhao/.cache/reviewagent/to
 export WANDB_CACHE_DIR=/network/scratch/j/jianan.zhao/.cache/reviewagent/wandb
 export TORCH_DEVICE=cuda
 
-cd /home/mila/j/jianan.zhao/ReviewAgent
-.venv/bin/python scripts/jobs/p2m_v3_shared_worker.py \
+cd "${PROJECT_ROOT}"
+PYTHON_BIN="${PYTHON_BIN:-${PROJECT_ROOT}/.venv/bin/python}"
+${PYTHON_BIN} scripts/jobs/p2m_v3_shared_worker.py \
   --run-root "${RUN_ROOT}" \
   --run-name "${RUN_NAME}" \
   --manifest "${MANIFEST}" \
