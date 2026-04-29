@@ -25,7 +25,6 @@ htmlcov/
 *.swo
 
 # Secrets and local credentials
-.env
 .env.*
 .api_key
 **/.api_key
@@ -67,10 +66,23 @@ agent_configs/*/config.local.json
 *.out
 *.err
 slurm-*.out
+/*.slurm
+wandb_*.slurm
 
 # Machine-specific notes
 cluster.md
 
-# Local machine/user environment generated for Utils shell init
+# Utility and Environment pipelines
+.env
 configs/user/env.yaml
 shell_env.sh
+
+# Project logs / artifacts (repo root only)
+/output/
+/outputs/
+/slurm/
+/temp/
+/wandb/
+
+# Codex temp workspace
+.codex_tmp/
