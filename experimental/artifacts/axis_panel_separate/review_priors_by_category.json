@@ -1,0 +1,733 @@
+{
+  "artifact_type": "axis_panel_separate_priors",
+  "source": {
+    "reviews_path": "/network/scratch/z/zhangya/shared_resource_perturbflow/iclr2026_openreview/reviews.jsonl",
+    "papers_path": "/network/scratch/z/zhangya/shared_resource_perturbflow/iclr2026_openreview/papers.jsonl",
+    "manifest": "experimental/results/axis_panel_master_backtest_iclr2026_100/input_manifest.jsonl"
+  },
+  "excluded_eval_forum_ids": [
+    "0WGl8PNMSA",
+    "0Z2l4XtTdz",
+    "0tzvmjMcXC",
+    "1FADg2UNPn",
+    "2H03gm4Rq6",
+    "2rxgospB5s",
+    "2sNrnTTEcv",
+    "32mrjmaeMP",
+    "3Gy5mmyuxn",
+    "3NXo0iyA8e",
+    "3kvV1nfWVq",
+    "3wMdHl7JQ6",
+    "44pUhNb083",
+    "4mfGbMzTwu",
+    "5F93RfQ12T",
+    "5L8uyzjn2l",
+    "5gUMhTUDi0",
+    "6FyYLNnDL6",
+    "6LA7KDjNsy",
+    "6SAdRgSugm",
+    "6TwQVKNnYy",
+    "73J3hsato3",
+    "7n5eoDZdZ5",
+    "9W4bPRsEIT",
+    "A8UKo53z3R",
+    "B2iqbCQviR",
+    "Cae9he70Th",
+    "DBCNTM7mot",
+    "DavFcTeTbK",
+    "EtzJy9yI5J",
+    "F7kDkYjBVa",
+    "FNnJIf4ymV",
+    "FxSsjSDXYZ",
+    "GGg2BmcBEp",
+    "HGdg76iVo6",
+    "HLc2igXEA3",
+    "HQcCd0laFq",
+    "IDdUGp5EJU",
+    "INXrtaUeGR",
+    "IobTEbQ3vt",
+    "IuZoTgsUws",
+    "J2J2LuXJev",
+    "JAI7afWA9e",
+    "JfsjGmuFxz",
+    "KiOqKKXomL",
+    "LWGeKI7P1e",
+    "MN1qlAVJLV",
+    "NAN0I3pNWk",
+    "QOWYX3Q2XS",
+    "QjjYRAMSg1",
+    "QqlWLkfbq2",
+    "R900G8z0cm",
+    "RWjEf9PdiJ",
+    "ST0wOB1bdX",
+    "Snfqe4lU3G",
+    "Tvat33IDmK",
+    "V5PHmFqsiY",
+    "VScnURO2g1",
+    "VShuGzpK61",
+    "VWf0YUD6w0",
+    "VpWDZ3yTBn",
+    "WFo8P1gQBh",
+    "XltolYTKCC",
+    "Yjlsd2Ueox",
+    "a4z7OlgSxC",
+    "aC2ku2uKcB",
+    "aT4LG8c6DE",
+    "aYA7RQfnB7",
+    "avs94SOBLO",
+    "cFzPNWC9Qb",
+    "cIC5r0uv4n",
+    "chLlLbI7de",
+    "dI5GvUg7ps",
+    "e5tepxQfE1",
+    "eLsEjjFODE",
+    "gHRoX4vXm3",
+    "gZIcyx1tQY",
+    "gjvTNxVd2f",
+    "jNY2bQnQ6D",
+    "l7GZ3vswuD",
+    "mGdx3g7VxN",
+    "mWKvHBINSl",
+    "mhalNLINnn",
+    "nsNpsCpVG1",
+    "nvu9jVEqoo",
+    "oEVfNf0w4B",
+    "qCIg2WGudx",
+    "qUeA0BYyAk",
+    "r3JUDAYjIH",
+    "r6jzGWqalX",
+    "raJNosW0o3",
+    "s7gSTR2AqA",
+    "tFNsosNMHT",
+    "uZGEEL20mU",
+    "wTO2ZYl9gQ",
+    "xfnR9ok8HJ",
+    "y9SV71G8fP",
+    "z5caL4aXLt",
+    "zeqCjGQB4U",
+    "zxsLio384j"
+  ],
+  "excluded_eval_forum_count": 100,
+  "official_reviews_admitted": 75473,
+  "source_status_counts": {
+    "accepted": 20715,
+    "desk_rejected": 2646,
+    "rejected": 32476,
+    "withdrawn": 19636
+  },
+  "categories": {
+    "d/Probabilistic-Methods": {
+      "paper_count": 3338,
+      "review_count": 12976,
+      "score_summary": {
+        "mean": 4.2412,
+        "median": 4.0,
+        "stdev": 1.8941
+      },
+      "score_histogram": {
+        "0": 228,
+        "2": 3405,
+        "4": 4930,
+        "6": 3429,
+        "8": 955,
+        "10": 29
+      },
+      "confidence_distribution": {
+        "medium": 4842,
+        "low": 1199,
+        "high": 6935
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9991,
+        "clarity_reproducibility": 0.9522,
+        "practical_scope": 0.8567,
+        "technical_soundness": 0.9786,
+        "novelty_positioning": 0.8065
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2412"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'medium': 4842, 'low': 1199, 'high': 6935}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Deep-Learning": {
+      "paper_count": 8164,
+      "review_count": 31821,
+      "score_summary": {
+        "mean": 4.1813,
+        "median": 4.0,
+        "stdev": 1.8782
+      },
+      "score_histogram": {
+        "0": 598,
+        "2": 8581,
+        "4": 12254,
+        "6": 8188,
+        "8": 2127,
+        "10": 73
+      },
+      "confidence_distribution": {
+        "medium": 10930,
+        "low": 2316,
+        "high": 18575
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9996,
+        "clarity_reproducibility": 0.955,
+        "practical_scope": 0.8688,
+        "technical_soundness": 0.9715,
+        "novelty_positioning": 0.8126
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.1813"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'medium': 10930, 'low': 2316, 'high': 18575}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Trustworthy-ML": {
+      "paper_count": 8233,
+      "review_count": 31952,
+      "score_summary": {
+        "mean": 4.1393,
+        "median": 4.0,
+        "stdev": 1.8627
+      },
+      "score_histogram": {
+        "0": 602,
+        "2": 8807,
+        "4": 12449,
+        "6": 8020,
+        "8": 2006,
+        "10": 68
+      },
+      "confidence_distribution": {
+        "medium": 11178,
+        "low": 2361,
+        "high": 18413
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9997,
+        "clarity_reproducibility": 0.9543,
+        "practical_scope": 0.852,
+        "technical_soundness": 0.9733,
+        "novelty_positioning": 0.8104
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.1393"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'medium': 11178, 'low': 2361, 'high': 18413}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Optimization": {
+      "paper_count": 5809,
+      "review_count": 22656,
+      "score_summary": {
+        "mean": 4.2233,
+        "median": 4.0,
+        "stdev": 1.8647
+      },
+      "score_histogram": {
+        "0": 382,
+        "2": 5869,
+        "4": 8885,
+        "6": 5945,
+        "8": 1508,
+        "10": 67
+      },
+      "confidence_distribution": {
+        "medium": 8023,
+        "low": 1781,
+        "high": 12852
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9989,
+        "clarity_reproducibility": 0.9537,
+        "practical_scope": 0.877,
+        "technical_soundness": 0.9743,
+        "novelty_positioning": 0.8072
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2233"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'medium': 8023, 'low': 1781, 'high': 12852}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/NLP": {
+      "paper_count": 12234,
+      "review_count": 47657,
+      "score_summary": {
+        "mean": 4.2228,
+        "median": 4.0,
+        "stdev": 1.8416
+      },
+      "score_histogram": {
+        "0": 744,
+        "2": 12185,
+        "4": 19058,
+        "6": 12472,
+        "8": 3083,
+        "10": 115
+      },
+      "confidence_distribution": {
+        "high": 28015,
+        "medium": 16498,
+        "low": 3144
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9997,
+        "clarity_reproducibility": 0.951,
+        "practical_scope": 0.8569,
+        "technical_soundness": 0.9675,
+        "novelty_positioning": 0.8032
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2228"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 28015, 'medium': 16498, 'low': 3144}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Computer-Vision": {
+      "paper_count": 7678,
+      "review_count": 29926,
+      "score_summary": {
+        "mean": 4.2395,
+        "median": 4.0,
+        "stdev": 1.8077
+      },
+      "score_histogram": {
+        "0": 428,
+        "2": 7370,
+        "4": 12245,
+        "6": 8024,
+        "8": 1792,
+        "10": 67
+      },
+      "confidence_distribution": {
+        "high": 19048,
+        "medium": 9255,
+        "low": 1623
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9997,
+        "clarity_reproducibility": 0.9534,
+        "practical_scope": 0.8601,
+        "technical_soundness": 0.9644,
+        "novelty_positioning": 0.8242
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2395"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 19048, 'medium': 9255, 'low': 1623}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Generative-Models": {
+      "paper_count": 7267,
+      "review_count": 28331,
+      "score_summary": {
+        "mean": 4.2632,
+        "median": 4.0,
+        "stdev": 1.8341
+      },
+      "score_histogram": {
+        "0": 425,
+        "2": 6970,
+        "4": 11371,
+        "6": 7646,
+        "8": 1854,
+        "10": 65
+      },
+      "confidence_distribution": {
+        "high": 16782,
+        "medium": 9616,
+        "low": 1933
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9998,
+        "clarity_reproducibility": 0.9491,
+        "practical_scope": 0.8602,
+        "technical_soundness": 0.9674,
+        "novelty_positioning": 0.8141
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2632"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 16782, 'medium': 9616, 'low': 1933}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Healthcare-Science-Applications": {
+      "paper_count": 6194,
+      "review_count": 24106,
+      "score_summary": {
+        "mean": 4.1353,
+        "median": 4.0,
+        "stdev": 1.851
+      },
+      "score_histogram": {
+        "0": 454,
+        "2": 6591,
+        "4": 9485,
+        "6": 6079,
+        "8": 1440,
+        "10": 57
+      },
+      "confidence_distribution": {
+        "high": 15102,
+        "medium": 7536,
+        "low": 1468
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9996,
+        "clarity_reproducibility": 0.9539,
+        "practical_scope": 0.8516,
+        "technical_soundness": 0.9655,
+        "novelty_positioning": 0.83
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, clarity_reproducibility, technical_soundness",
+        "Mean rating prior: 4.1353"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 15102, 'medium': 7536, 'low': 1468}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Reinforcement-Learning": {
+      "paper_count": 4279,
+      "review_count": 16623,
+      "score_summary": {
+        "mean": 4.2889,
+        "median": 4.0,
+        "stdev": 1.8645
+      },
+      "score_histogram": {
+        "0": 256,
+        "2": 4082,
+        "4": 6595,
+        "6": 4426,
+        "8": 1223,
+        "10": 41
+      },
+      "confidence_distribution": {
+        "high": 9020,
+        "medium": 6287,
+        "low": 1316
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9991,
+        "clarity_reproducibility": 0.9586,
+        "practical_scope": 0.8584,
+        "technical_soundness": 0.9723,
+        "novelty_positioning": 0.8015
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2889"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 9020, 'medium': 6287, 'low': 1316}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Theory": {
+      "paper_count": 3733,
+      "review_count": 14598,
+      "score_summary": {
+        "mean": 4.2895,
+        "median": 4.0,
+        "stdev": 1.9406
+      },
+      "score_histogram": {
+        "0": 297,
+        "2": 3752,
+        "4": 5364,
+        "6": 3962,
+        "8": 1172,
+        "10": 51
+      },
+      "confidence_distribution": {
+        "high": 7546,
+        "medium": 5509,
+        "low": 1543
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9982,
+        "clarity_reproducibility": 0.9573,
+        "practical_scope": 0.849,
+        "technical_soundness": 0.9813,
+        "novelty_positioning": 0.8074
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.2895"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 7546, 'medium': 5509, 'low': 1543}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Multi-agent-Game-Theory": {
+      "paper_count": 975,
+      "review_count": 3815,
+      "score_summary": {
+        "mean": 4.0996,
+        "median": 4.0,
+        "stdev": 1.8916
+      },
+      "score_histogram": {
+        "0": 85,
+        "2": 1089,
+        "4": 1451,
+        "6": 944,
+        "8": 233,
+        "10": 13
+      },
+      "confidence_distribution": {
+        "medium": 1380,
+        "low": 300,
+        "high": 2135
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9979,
+        "clarity_reproducibility": 0.9586,
+        "practical_scope": 0.8603,
+        "technical_soundness": 0.9706,
+        "novelty_positioning": 0.81
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, clarity_reproducibility, technical_soundness",
+        "Mean rating prior: 4.0996"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'medium': 1380, 'low': 300, 'high': 2135}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Graph-Learning": {
+      "paper_count": 2791,
+      "review_count": 10894,
+      "score_summary": {
+        "mean": 4.0608,
+        "median": 4.0,
+        "stdev": 1.8809
+      },
+      "score_histogram": {
+        "0": 237,
+        "2": 3212,
+        "4": 4143,
+        "6": 2606,
+        "8": 677,
+        "10": 19
+      },
+      "confidence_distribution": {
+        "high": 6460,
+        "medium": 3572,
+        "low": 862
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 0.9993,
+        "clarity_reproducibility": 0.9564,
+        "practical_scope": 0.8588,
+        "technical_soundness": 0.9699,
+        "novelty_positioning": 0.8249
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Mean rating prior: 4.0608"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'high': 6460, 'medium': 3572, 'low': 862}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "d/Robotics": {
+      "paper_count": 1194,
+      "review_count": 4653,
+      "score_summary": {
+        "mean": 4.3176,
+        "median": 4.0,
+        "stdev": 1.9064
+      },
+      "score_histogram": {
+        "0": 87,
+        "2": 1118,
+        "4": 1823,
+        "6": 1237,
+        "8": 370,
+        "10": 18
+      },
+      "confidence_distribution": {
+        "low": 298,
+        "medium": 1567,
+        "high": 2788
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 1.0,
+        "clarity_reproducibility": 0.9531,
+        "practical_scope": 0.868,
+        "technical_soundness": 0.9639,
+        "novelty_positioning": 0.8111
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, technical_soundness, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: evidence_completeness, clarity_reproducibility, technical_soundness",
+        "Mean rating prior: 4.3176"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'low': 298, 'medium': 1567, 'high': 2788}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "iclr/other-topics-in-machine-learning-i-e-none-of-the-above": {
+      "paper_count": 7,
+      "review_count": 29,
+      "score_summary": {
+        "mean": 4.2759,
+        "median": 4.0,
+        "stdev": 2.1479
+      },
+      "score_histogram": {
+        "0": 1,
+        "2": 9,
+        "4": 7,
+        "6": 9,
+        "8": 3
+      },
+      "confidence_distribution": {
+        "medium": 12,
+        "low": 5,
+        "high": 12
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 1.0,
+        "clarity_reproducibility": 0.9655,
+        "practical_scope": 0.8966,
+        "technical_soundness": 1.0,
+        "novelty_positioning": 0.8966
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, clarity_reproducibility, technical_soundness",
+        "Higher-rated reviews more often emphasize: evidence_completeness, practical_scope, clarity_reproducibility",
+        "Mean rating prior: 4.2759"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 4.0",
+        "Confidence prior: {'medium': 12, 'low': 5, 'high': 12}",
+        "Most frequent concern axes: evidence_completeness, technical_soundness, clarity_reproducibility"
+      ]
+    },
+    "iclr/infrastructure-software-libraries-hardware-systems-etc": {
+      "paper_count": 1,
+      "review_count": 4,
+      "score_summary": {
+        "mean": 3.0,
+        "median": 2.0,
+        "stdev": 1.7321
+      },
+      "score_histogram": {
+        "2": 3,
+        "6": 1
+      },
+      "confidence_distribution": {
+        "medium": 2,
+        "high": 2
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 1.0,
+        "clarity_reproducibility": 0.75,
+        "practical_scope": 1.0,
+        "technical_soundness": 1.0,
+        "novelty_positioning": 1.0
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, practical_scope, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: no dominant axis",
+        "Mean rating prior: 3.0"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 2.0",
+        "Confidence prior: {'medium': 2, 'high': 2}",
+        "Most frequent concern axes: novelty_positioning, technical_soundness, evidence_completeness"
+      ]
+    },
+    "iclr/datasets-and-benchmarks": {
+      "paper_count": 1,
+      "review_count": 4,
+      "score_summary": {
+        "mean": 5.0,
+        "median": 6.0,
+        "stdev": 1.7321
+      },
+      "score_histogram": {
+        "2": 1,
+        "6": 3
+      },
+      "confidence_distribution": {
+        "high": 3,
+        "medium": 1
+      },
+      "axis_concern_frequencies": {
+        "evidence_completeness": 1.0,
+        "clarity_reproducibility": 1.0,
+        "practical_scope": 0.75,
+        "technical_soundness": 0.5,
+        "novelty_positioning": 1.0
+      },
+      "typical_severity_patterns": [
+        "Low-rated reviews often combine: evidence_completeness, practical_scope, clarity_reproducibility",
+        "Higher-rated reviews more often emphasize: no dominant axis",
+        "Mean rating prior: 5.0"
+      ],
+      "calibration_priors": [
+        "Median rating prior: 6.0",
+        "Confidence prior: {'high': 3, 'medium': 1}",
+        "Most frequent concern axes: novelty_positioning, evidence_completeness, clarity_reproducibility"
+      ]
+    }
+  }
+}
