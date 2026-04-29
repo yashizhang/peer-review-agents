@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import time
@@ -37,10 +38,19 @@ def _run_command(command: list[str], *, timeout: int | None = None) -> tuple[int
         return 1, f"command start failed: {exc}"
 
 
-def _download_pdf(url: str, destination: Path, *, timeout_seconds: int = 120) -> tuple[bool, int, str | None]:
+def _download_pdf(
+    url: str,
+    destination: Path,
+    *,
+    timeout_seconds: int = 120,
+    download_log: Path | None = None,
+) -> tuple[bool, int, str | None]:
     destination.parent.mkdir(parents=True, exist_ok=True)
     hasher = hashlib.sha256()
     bytes_count = 0
+    log_path = (download_log or destination.with_suffix(f"{destination.suffix}.download.log")).resolve()
+    diagnostics: list[str] = []
+
     try:
         if destination.exists():
             destination.unlink()
@@ -50,49 +60,65 @@ def _download_pdf(url: str, destination: Path, *, timeout_seconds: int = 120) ->
     status_code = -1
     curl_cmd = shutil.which("curl")
     if curl_cmd:
-        code, log = _run_command(
-            [
-                curl_cmd,
-                "-L",
-                "--fail",
-                "--show-error",
-                "--max-time",
-                str(timeout_seconds),
-                "--location-trusted",
-                "--output",
-                str(destination),
-                url,
-            ],
-            timeout=timeout_seconds + 20,
-        )
-        status_code = 0 if code == 0 else 1
-        if code != 0:
-            if destination.exists():
-                destination.unlink()
-            return False, status_code, None
+        command = [
+            curl_cmd,
+            "-L",
+            "--fail",
+            "--show-error",
+            "--retry",
+            "2",
+            "--retry-delay",
+            "2",
+            "--max-time",
+            str(timeout_seconds),
+            "--location-trusted",
+            "--user-agent",
+            "Mozilla/5.0 (X11; Linux x86_64)",
+            "--output",
+            str(destination),
+            url,
+        ]
+        diagnostics.append(f"command: {shlex.join(command)}")
+        code, log = _run_command(command, timeout=timeout_seconds + 20)
     else:
         wget_cmd = shutil.which("wget")
         if not wget_cmd:
+            diagnostics.append("No curl/wget available on worker")
+            log_path.write_text("\n".join(diagnostics) + "\n", encoding="utf-8")
             return False, status_code, None
-        code, log = _run_command(
-            [wget_cmd, "--timeout", str(timeout_seconds), "-O", str(destination), url],
-            timeout=timeout_seconds + 20,
-        )
-        status_code = 0 if code == 0 else 1
-        if code != 0:
-            if destination.exists():
-                destination.unlink()
-            return False, status_code, None
+        command = [wget_cmd, "--timeout", str(timeout_seconds), "-O", str(destination), url]
+        diagnostics.append(f"command: {shlex.join(command)}")
+        code, log = _run_command(command, timeout=timeout_seconds + 20)
+
+    status_code = 0 if code == 0 else 1
+    if code != 0:
+        diagnostics.append(log)
+        log_path.write_text("\n".join(filter(None, diagnostics)) + "\n", encoding="utf-8")
+        if destination.exists():
+            destination.unlink()
+        return False, status_code, None
 
     if not destination.exists():
+        diagnostics.append("download completed but destination missing")
+        log_path.write_text("\n".join(filter(None, diagnostics)) + "\n", encoding="utf-8")
+        return False, status_code, None
+
+    with destination.open("rb") as handle:
+        head = handle.read(8)
+    if not head.startswith(b"%PDF"):
+        diagnostics.append("Downloaded file is not a PDF (missing PDF header)")
+        log_path.write_text("\n".join(filter(None, diagnostics)) + "\n", encoding="utf-8")
+        destination.unlink(missing_ok=True)
         return False, status_code, None
 
     with destination.open("rb") as handle:
         for chunk in iter(lambda: handle.read(2**20), b""):
-            if not chunk:
-                continue
-            hasher.update(chunk)
-            bytes_count += len(chunk)
+            if chunk:
+                hasher.update(chunk)
+                bytes_count += len(chunk)
+    diagnostics.append(f"downloaded_bytes={bytes_count}")
+    diagnostics.append(f"download_exit_code={status_code}")
+    log_path.write_text("\n".join(filter(None, diagnostics)) + "\n", encoding="utf-8")
     return True, bytes_count, hasher.hexdigest()
 
 
@@ -268,7 +294,12 @@ def run_worker(
             if raw_pdf.exists() and raw_bytes > 64:
                 break
             try:
-                ok, bytes_count, got_digest = _download_pdf(raw_url, raw_pdf, timeout_seconds=marker_timeout_seconds)
+                ok, bytes_count, got_digest = _download_pdf(
+                    raw_url,
+                    raw_pdf,
+                    timeout_seconds=marker_timeout_seconds,
+                    download_log=raw_pdf.with_suffix(".pdf.download.log"),
+                )
             except Exception as exc:
                 paper_row["error"] = f"download_exception:{exc}"
                 ok = False
@@ -279,6 +310,9 @@ def run_worker(
                 raw_bytes = bytes_count
                 break
             paper_row["error"] = f"download_failed:{bytes_count}"
+            download_log = raw_pdf.with_suffix(".pdf.download.log")
+            if download_log.exists():
+                paper_row["download_log_head"] = (download_log.read_text(encoding="utf-8")[:500]).strip()
             raw_bytes = 0
             if raw_pdf.exists():
                 raw_pdf.unlink()
