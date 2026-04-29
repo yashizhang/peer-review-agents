@@ -71,60 +71,340 @@ koala_reference_current.jsonl  349 Koala platform papers used as target distribu
 - `global_test_labels.jsonl` 只用于 offline evaluation，不进入 agent prompt 或线上决策。
 - `koala_reference_current.jsonl` 是 Koala 平台当前论文流快照，用于构造 ICLR26 test distribution；它不是 labeled training data。
 
-## PDF 解析策略
+## PDF-to-Markdown 最终流程
 
-现有 `data/pdf_cache/` 是 ICLR26 offline 数据的旧版派生缓存，不是官方比赛原始数据。
+官方 Koala/ICML26 只提供 paper metadata、`pdf_url`、可能的 `tarball_url` / `github_urls`，**不提供已经处理好的 Markdown、全文 JSON、blocks 或 chunks**。自建 ICLR26 offline 数据也只在 JSONL 里保存 metadata、label/review 字段和 OpenReview PDF URL；现有 `data/pdf_cache/` 是旧 PyMuPDF 文本 cache，不是 review-ready corpus。
 
-`Paper2Markdown-V0` 是旧流程：
+因此正式策略是统一把 ICLR26 offline PDFs 和 Koala/ICML26 live PDFs 都处理成同一种 `Paper2Markdown-V3` cache。agent 和 predictor 默认读 V3 的 model-facing artifacts，不直接读原始 PDF，也不直接读 raw Marker Markdown。
 
-```text
-ICLR26 JSONL record
-  -> OpenReview PDF URL
-  -> data/pdf_cache/raw/{paper_id}.pdf
-  -> PyMuPDF text extraction
-  -> data/pdf_cache/parsed/{paper_id}.json
-```
-
-Mila 当前 cache 状态：
+### 版本边界
 
 ```text
-data/pdf_cache/parsed/*.json  2,349
-ok=true/full_text              1,138
-download_failed                1,211
+Paper2Markdown-V0
+  PyMuPDF legacy text cache
+  output: data/pdf_cache/parsed/{paper_id}.json
+  status: 仅用于旧 full_text features，不再作为默认 review 输入
+
+Paper2Markdown-V1
+  Marker non-LLM raw parse
+  output: raw Markdown + Marker blocks/chunks + images + parse_report
+  status: 可审计 raw cache，不直接给模型
+
+Paper2Markdown-V2
+  V1 raw parse + deterministic scrub / artifact gate
+  fixes: author/affiliation、acknowledgement、line numbers、bad page ids、bad image crops
+  status: 安全出口基础层
+
+Paper2Markdown-V3
+  V2 chunks + final model payload split
+  output: model_text_v3.txt + main_body/appendix/reference chunks + filtered assets
+  status: 默认 review/factsheet/predictor text backbone
 ```
 
-这个 cache 覆盖 `global_train` 的 2,000 篇子集和 `global_test_public` 的 349 篇，不覆盖 Koala/ICML26 live papers。
+V3 的核心原则：
 
-`Paper2Markdown-V1` 是当前 Mila smoke 验证过的 Marker non-LLM raw parse baseline。它在 RaftPPI / `Dp1RM3gPg8` 上输出 Markdown、Marker JSON、Marker chunks、meta TOC、figure images 和 `parse_report.json`；相比 V0，它有 block/page/section provenance，更适合构造 review-agent chunks。但 V1 raw output 仍保留作者、单位、code release 和 acknowledgement 等匿名性风险，因此不能直接作为模型输入。
+- Parser 阶段不使用 LLM，不做 summarization、semantic compression、citation deletion 或随机 section sampling。
+- Raw Marker output 永远保留用于 audit；model-facing payload 单独生成。
+- 默认模型输入是 `model_text_v3.txt`，来源于 `main_body_chunks.jsonl`。
+- `appendix_chunks.jsonl` 和 `reference_chunks.jsonl` 默认不进入 predictor 主输入，只做 on-demand retrieval。
+- 关键图、表、公式仍可回看 raw PDF / selected assets；V3 是 text backbone，不是 raw PDF 的完全替代品。
 
-`Paper2Markdown-V2` 在 V1 raw parse 之后增加 deterministic model-facing artifact gate。原则是保留 raw parse cache 以便审计，但所有 review-agent / predictor 会读到的 payload 必须经过同一套安全出口：
+### 目录约定
 
-- `sanitized_v2.txt` 删除 title page author/affiliation block、acknowledgement/funding blocks、email、OpenReview/status/camera-ready、PDF 行号污染等泄漏文本。
-- `chunks_v2_anonymized.jsonl` 从 Marker blocks 重新生成，跳过 abstract 前的作者/单位 block，并对每条 chunk 独立清洗。
-- chunk 页码从 Marker block id 的 `/page/{i}/...` 恢复成真实 1-based PDF page number，并强制满足 `1 <= page_start <= page_end <= page_count`；不再使用 Marker internal `page` id。
-- `assets.json` 标注 image crop 是否可作为 visual evidence，默认过滤过小、极端长宽比、疑似 margin line-number strip 的 crop。
-- `sanitization_report.json` 不只检查 `sanitized_v2.txt`，还要覆盖 chunks 等所有 model-facing text artifacts。
-
-`Paper2Markdown-V3` 是默认 agent 输入层：不再建议把 `sanitized_v2.txt` 整段塞进 prompt，而是从匿名 chunks 生成 `model_text_v3.txt`，格式为 `[p. N | section: ... | type: ...] evidence`。V3 同时输出 `main_body_chunks.jsonl`、`appendix_chunks.jsonl`、`reference_chunks.jsonl`，让 predictor 默认只看 main body，appendix/reference 走 on-demand retrieval。V3 还会过滤 LLM usage / disclosure / reproducibility / author statement sections，并修复粘连 URL，例如 `Ihttps://...`。
-
-parser 改进目标是保留 legacy JSON 兼容层，同时新增 review-ready parse cache：
+正式 cache 根目录放在 Mila scratch，不提交 Git：
 
 ```text
-data/pdf_parse_cache/v1/{paper_id}/
-  paper.md
-  paper.blocks.json
-  assets.json
-  chunks_v3_anonymized.jsonl
-  model_text_v3.txt
-  main_body_chunks.jsonl
-  appendix_chunks.jsonl
-  reference_chunks.jsonl
-  parse_report.json
-  sanitization_report.json
-  legacy_payload.json
+data/pdf_parse_cache/{run_name}/
+  input_manifest.json
+  raw/
+    {paper_id}.pdf
+  marker_raw/
+    {paper_id}/
+      parse_report.json
+      marker_markdown/
+        {paper_id}/
+          {paper_id}.md
+          {paper_id}_meta.json
+          *.jpeg
+      marker_chunks/
+        {paper_id}/
+          {paper_id}.json
+  processed_v3/
+    {paper_id}/
+      paper.md
+      paper.blocks.json
+      marker_meta.json
+      sanitized_v3.txt
+      chunks_v3_anonymized.jsonl
+      main_body_chunks.jsonl
+      appendix_chunks.jsonl
+      reference_chunks.jsonl
+      model_text_v3.txt
+      appendix_text_v3.txt
+      reference_text_v3.txt
+      assets/
+      assets_all/
+      assets.json
+      parse_report.json
+      sanitization_report.json
+  processed_v3_summary.json
 ```
 
-默认策略是 Marker 主线解析，Docling 做 fallback / visual asset enhancement；不在 parser 阶段使用 LLM summarization、semantic compression、citation deletion 或随机 section sampling。
+`input_manifest.json` 每条至少包含：
+
+```json
+{
+  "paper_id": "Dp1RM3gPg8",
+  "source": "iclr_public_test",
+  "title": "Fast Proteome-Scale Protein Interaction Retrieval via Residue-Level Factorization",
+  "pdf_path": "data/pdf_parse_cache/<run_name>/raw/Dp1RM3gPg8.pdf",
+  "url": "https://openreview.net/pdf?id=Dp1RM3gPg8",
+  "bytes": 1474383,
+  "sha256": "..."
+}
+```
+
+Koala/ICML26 的 `pdf_url` 可能是 `/storage/pdfs/<uuid>.pdf` 这种相对路径；下载时要拼接 Koala storage base URL。ICLR26 使用 OpenReview absolute PDF URL。
+
+### Mila 环境
+
+所有 PDF batch parsing 都在 Mila 跑。本地只做代码修改、轻量测试和文档维护。
+
+```bash
+cd /home/mila/j/jianan.zhao/scratch/ReviewAgent
+source /home/mila/j/jianan.zhao/scratch/Utils/shell/init.sh ReviewAgent
+
+export LD_LIBRARY_PATH=/cvmfs/ai.mila.quebec/apps/x86_64/debian/anaconda/3/lib:${LD_LIBRARY_PATH:-}
+export XDG_CACHE_HOME=/network/scratch/j/jianan.zhao/.cache/reviewagent
+export TRITON_CACHE_DIR=/network/scratch/j/jianan.zhao/.cache/reviewagent/triton
+export TMPDIR=/network/scratch/j/jianan.zhao/tmp/reviewagent
+export HF_HOME=/network/scratch/j/jianan.zhao/.cache/reviewagent/huggingface
+export HUGGINGFACE_HUB_CACHE=/network/scratch/j/jianan.zhao/.cache/reviewagent/huggingface/hub
+export TRANSFORMERS_CACHE=/network/scratch/j/jianan.zhao/.cache/reviewagent/huggingface/transformers
+export HF_DATASETS_CACHE=/network/scratch/j/jianan.zhao/.cache/reviewagent/huggingface/datasets
+export TORCH_EXTENSIONS_DIR=/network/scratch/j/jianan.zhao/.cache/reviewagent/torch_extensions
+export WANDB_CACHE_DIR=/network/scratch/j/jianan.zhao/.cache/reviewagent/wandb
+export TORCH_DEVICE=cuda
+```
+
+Marker raw parse 使用项目环境里的 binary：
+
+```bash
+/network/scratch/j/jianan.zhao/ReviewAgent/.venv/bin/marker_single
+```
+
+### Stage 0: Inventory
+
+先生成 `input_manifest.json`，再下载 PDF 到 `raw/{paper_id}.pdf`。不要直接对 remote URL 反复 parse；PDF binary 要缓存并记录 SHA256、bytes、page_count。
+
+ICLR26 输入来自：
+
+```text
+data/koala_iclr2026/global_train.jsonl
+data/koala_iclr2026/global_test_public.jsonl
+```
+
+Koala/ICML26 输入来自 Koala API / MCP paper feed：
+
+```text
+paper_id
+title
+abstract
+domains
+pdf_url
+tarball_url
+github_urls
+status
+created_at / updated_at
+```
+
+### Stage 1: Marker Raw Parse
+
+每篇 PDF 默认跑两个 non-LLM Marker output：`markdown` 和 `chunks`。当前 V3 smoke 是保守实现：同一篇 PDF parse 两次，换取输出稳定、debug 简单。
+
+单篇命令形态：
+
+```bash
+PAPER_ID=Dp1RM3gPg8
+PDF=data/pdf_parse_cache/<run_name>/raw/${PAPER_ID}.pdf
+RAW_ROOT=data/pdf_parse_cache/<run_name>/marker_raw/${PAPER_ID}
+
+mkdir -p "${RAW_ROOT}/marker_markdown" "${RAW_ROOT}/marker_chunks"
+
+marker_single "${PDF}" \
+  --output_dir "${RAW_ROOT}/marker_markdown" \
+  --output_format markdown \
+  --disable_tqdm \
+  --disable_multiprocessing
+
+marker_single "${PDF}" \
+  --output_dir "${RAW_ROOT}/marker_chunks" \
+  --output_format chunks \
+  --disable_tqdm \
+  --disable_multiprocessing
+```
+
+同目录还必须写 `parse_report.json`，至少包括：
+
+```json
+{
+  "paper_id": "Dp1RM3gPg8",
+  "pipeline": "marker_non_llm",
+  "parser": "marker-pdf",
+  "formats": ["markdown", "chunks"],
+  "llm_enabled": false,
+  "pdf_path": "...",
+  "pdf_sha256": "...",
+  "page_count": 18,
+  "source": "iclr_public_test",
+  "title": "..."
+}
+```
+
+### Stage 2: V3 Postprocess
+
+Marker raw parse 完成后，用 repo script 生成最终 model-facing artifacts：
+
+```bash
+python scripts/postprocess_marker_v3.py \
+  --input-root data/pdf_parse_cache/<run_name>/marker_raw \
+  --output-root data/pdf_parse_cache/<run_name>/processed_v3 \
+  --copy-assets-all \
+  --summary-path data/pdf_parse_cache/<run_name>/processed_v3_summary.json
+```
+
+也可以只处理特定 paper：
+
+```bash
+python scripts/postprocess_marker_v3.py \
+  --input-root data/pdf_parse_cache/<run_name>/marker_raw \
+  --output-root data/pdf_parse_cache/<run_name>/processed_v3 \
+  --paper-id Dp1RM3gPg8 \
+  --summary-path data/pdf_parse_cache/<run_name>/processed_v3_summary.json
+```
+
+V3 postprocess 做的事情：
+
+- 从 Marker block id `/page/{i}/...` 恢复真实 1-based PDF 页码。
+- 强制所有 chunk 满足 `1 <= page_start <= page_end <= page_count`。
+- 跳过 abstract 前 author / affiliation / title-page metadata。
+- 支持 `Abstract—...` 作为普通 Text block 的 IEEE 风格 PDF。
+- 过滤 acknowledgement / funding / OpenReview status / LLM usage / author statement / reproducibility statement 等 section。
+- 修复粘连 URL，例如 `Ihttps://...`。
+- 过滤纯行号文本、PageHeader、PageFooter。
+- 过滤过小、极端长宽比、疑似 margin strip 的 image crop。
+- 将 chunks 拆成 main body、appendix、references 三个 view。
+- 渲染默认 `model_text_v3.txt`，每段格式为：
+
+```text
+[p. 5 | section: 4 Experiments | type: TableGroup]
+...
+```
+
+### Stage 3: 质量验收
+
+每次 batch 完成后至少检查：
+
+```bash
+python - <<'PY'
+import json
+from pathlib import Path
+
+summary = json.loads(Path("data/pdf_parse_cache/<run_name>/processed_v3_summary.json").read_text())
+print("papers", len(summary))
+print("ok", sum(1 for row in summary if row.get("ok")))
+for row in summary:
+    if not row.get("ok"):
+        print(row["paper_id"], row.get("error"))
+PY
+```
+
+对每篇 paper，`sanitization_report.json` 必须满足：
+
+- `ok: true`
+- `page_provenance.invalid_count == 0`
+- `chunk_count > 0`
+- `model_text_chars > 0`
+- artifact leak audit 不命中 `OpenReview`、official review / meta-review 字段、decision / label 字段等。
+
+如果某篇失败：
+
+- `missing inputs`：先补跑 Marker raw parse。
+- `chunk_count == 0`：检查 abstract/body start，可能是 parser block style 新边界。
+- `invalid_count > 0`：禁止给 agent 使用，先修 page provenance。
+- asset crop 噪声太多：看 `assets.json` 的 reject reason，必要时调 filter。
+
+### Stage 4: Agent 使用规则
+
+review / factsheet 默认读取：
+
+```text
+processed_v3/{paper_id}/model_text_v3.txt
+processed_v3/{paper_id}/assets.json
+processed_v3/{paper_id}/assets/*
+```
+
+retrieval 需要更多证据时再读：
+
+```text
+processed_v3/{paper_id}/appendix_chunks.jsonl
+processed_v3/{paper_id}/reference_chunks.jsonl
+processed_v3/{paper_id}/appendix_text_v3.txt
+processed_v3/{paper_id}/reference_text_v3.txt
+```
+
+不要默认给 model 读：
+
+```text
+paper.md
+paper.blocks.json
+sanitized_v3.txt
+assets_all/*
+raw PDF
+raw_records with labels/reviews/decisions
+```
+
+其中 `paper.md` / `paper.blocks.json` / `assets_all/` 是 audit/debug 用；`sanitized_v3.txt` 是全文审计文本，不是默认 prompt payload；raw PDF 只用于关键图表、公式和视觉 fidelity fallback。
+
+### V3 smoke 结果和估时
+
+最新 10 篇 Mila smoke：
+
+```text
+run root: data/pdf_parse_cache/v3_smoke_10/
+final root: data/pdf_parse_cache/v3_smoke_10/processed_v3/
+summary:   data/pdf_parse_cache/v3_smoke_10/processed_v3_summary.json
+commit:    8c66f3a
+result:    10 papers / ok 10
+```
+
+统计：
+
+| subset | papers | pages | chunks | main | appendix | refs | assets kept/raw | invalid pages |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ICLR public/test sample | 5 | 140 | 944 | 347 | 563 | 34 | 44/51 | 0 |
+| Koala/ICML sample | 5 | 106 | 1041 | 450 | 558 | 33 | 55/58 | 0 |
+| total | 10 | 246 | 1985 | 797 | 1121 | 67 | 99/109 | 0 |
+
+实测 short-unkillable job `9405494`：4 GPU，补跑 3 篇 / 77 页，wall time `00:06:59`。单 worker end-to-end 约 `10.9 sec/page`，这是保守估计，因为当前每篇跑 Marker markdown + chunks 两次。
+
+按当前实现外推：
+
+```text
+ICLR downloaded cache: 1139 PDFs / 29300 pages
+4 workers:  24-30h
+8 workers:  12-15h
+16 workers: 6-8h
+
+ICLR public/test 349 papers: about 9000 pages
+4 workers: about 7-8h
+
+Koala/ICML current reference 349 papers: about 7400 pages by current sample
+4 workers: about 6-7h
+300 competition papers: about 5-6h plus PDF download time
+```
+
+全量 production batch 应使用 Slurm，优先用可并行 worker。不要在比赛交互时临时 parse PDF；应提前 batch preprocess 并缓存。
 
 ## Agent 架构
 
