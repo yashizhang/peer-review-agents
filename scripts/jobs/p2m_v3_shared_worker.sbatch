@@ -23,7 +23,7 @@ mkdir -p "${LOG_DIR}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${PROJECT_ROOT:-"$(cd "${SCRIPT_DIR}/../.." && pwd)"}"
 cd "${PROJECT_ROOT}"
-source /network/scratch/j/jianan.zhao/scratch/Utils/shell/init.sh ReviewAgent
+source /network/scratch/j/jianan.zhao/Utils/shell/init.sh ReviewAgent
 
 export LD_LIBRARY_PATH=/cvmfs/ai.mila.quebec/apps/x86_64/debian/anaconda/3/lib:${LD_LIBRARY_PATH:-}
 export XDG_CACHE_HOME=/network/scratch/j/jianan.zhao/.cache/reviewagent
