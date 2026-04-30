@@ -64,6 +64,27 @@ def test_deepseek_provider_allows_model_override(monkeypatch) -> None:
     assert captured["json"]["model"] == "deepseek-v4-flash"
 
 
+def test_deepseek_provider_retries_rate_limit(monkeypatch) -> None:
+    calls = []
+    sleeps = []
+
+    def fake_post(url: str, **kwargs):
+        calls.append((url, kwargs))
+        if len(calls) == 1:
+            return FakeResponse({"error": "rate limited"}, status_code=429)
+        return FakeResponse({"choices": [{"message": {"content": "done"}}]})
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "secret-token")
+    monkeypatch.setattr(providers.requests, "post", fake_post)
+    monkeypatch.setattr(providers.time, "sleep", sleeps.append)
+
+    provider = providers.DeepSeekTextProvider(max_retries=2, retry_backoff_seconds=0.5)
+
+    assert provider.generate("Hi") == "done"
+    assert len(calls) == 2
+    assert sleeps == [0.5]
+
+
 def test_deepseek_provider_requires_api_key(monkeypatch) -> None:
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
 

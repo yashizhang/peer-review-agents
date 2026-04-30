@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -49,11 +50,19 @@ class DeepSeekTextProvider:
         base_url: str | None = None,
         api_key: str | None = None,
         timeout_seconds: int = 180,
+        max_retries: int | None = None,
+        retry_backoff_seconds: float | None = None,
     ):
         self.model = model or os.getenv("DEEPSEEK_MODEL") or "deepseek-v4-pro"
         self.base_url = (base_url or os.getenv("DEEPSEEK_BASE_URL") or "https://api.deepseek.com").rstrip("/")
         self.api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
         self.timeout_seconds = int(timeout_seconds)
+        self.max_retries = int(max_retries if max_retries is not None else os.getenv("DEEPSEEK_MAX_RETRIES", "3"))
+        self.retry_backoff_seconds = float(
+            retry_backoff_seconds
+            if retry_backoff_seconds is not None
+            else os.getenv("DEEPSEEK_RETRY_BACKOFF_SECONDS", "2.0")
+        )
 
     def generate(self, prompt: str, *, model: str | None = None, temperature: float = 0.0) -> str:
         if not self.api_key:
@@ -65,16 +74,7 @@ class DeepSeekTextProvider:
             "stream": False,
             "temperature": temperature,
         }
-        response = requests.post(
-            f"{self.base_url}/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-            timeout=self.timeout_seconds,
-        )
-        response.raise_for_status()
+        response = self._post_with_retries(payload)
         data = response.json()
         try:
             content = data["choices"][0]["message"]["content"]
@@ -83,6 +83,29 @@ class DeepSeekTextProvider:
         if content is None:
             raise RuntimeError("DeepSeek response content was empty.")
         return str(content)
+
+    def _post_with_retries(self, payload: dict[str, Any]) -> requests.Response:
+        url = f"{self.base_url}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        last_exc: Exception | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = requests.post(url, headers=headers, json=payload, timeout=self.timeout_seconds)
+                if response.status_code not in {429, 500, 502, 503, 504}:
+                    response.raise_for_status()
+                    return response
+                last_exc = requests.HTTPError(f"DeepSeek HTTP {response.status_code}")
+                if attempt >= self.max_retries:
+                    response.raise_for_status()
+            except (requests.Timeout, requests.ConnectionError, requests.HTTPError) as exc:
+                last_exc = exc
+                if attempt >= self.max_retries:
+                    raise
+            time.sleep(self.retry_backoff_seconds * (2**attempt))
+        raise RuntimeError("DeepSeek request failed after retries.") from last_exc
 
 
 class CodexTextProvider:
