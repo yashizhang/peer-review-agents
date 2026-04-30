@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -190,6 +191,7 @@ def extract_review_evaluator_features(
     output_path: Path | None = None,
     cache_dir: Path | None = None,
     limit: int | None = None,
+    workers: int = 1,
     force: bool = False,
     provider: TextProvider | None = None,
     config: dict[str, Any] | None = None,
@@ -207,8 +209,9 @@ def extract_review_evaluator_features(
     )
     if limit is not None:
         paper_ids = paper_ids[:limit]
-    rows: list[dict[str, Any]] = []
-    for paper_id in paper_ids:
+    max_workers = max(1, int(workers))
+
+    def process_paper(paper_id: str) -> dict[str, Any]:
         self_path = self_review_cache_dir / f"{paper_id}.json"
         train_row = train_rows[paper_id]
         self_review = json.loads(self_path.read_text(encoding="utf-8"))
@@ -223,9 +226,25 @@ def extract_review_evaluator_features(
         )
         row: dict[str, Any] = {"paper_id": paper_id}
         row.update(flatten_external_review_features(result))
-        rows.append(row)
+        return row
+
+    if max_workers == 1 or len(paper_ids) <= 1:
+        rows = [process_paper(paper_id) for paper_id in paper_ids]
+    else:
+        rows: list[dict[str, Any] | None] = [None] * len(paper_ids)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(process_paper, paper_id): idx for idx, paper_id in enumerate(paper_ids)}
+            for future in as_completed(futures):
+                rows[futures[future]] = future.result()
+        rows = [row for row in rows if row is not None]
     write_jsonl(output, rows)
-    summary = {"subset": subset, "num_papers": len(rows), "output": str(output), "cache_dir": str(cache)}
+    summary = {
+        "subset": subset,
+        "num_papers": len(rows),
+        "workers": max_workers,
+        "output": str(output),
+        "cache_dir": str(cache),
+    }
     dump_json(output.with_suffix(".summary.json"), summary)
     return summary
 

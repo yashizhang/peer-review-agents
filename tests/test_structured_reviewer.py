@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 from pathlib import Path
 
 from koala_strategy.llm import structured_reviewer
@@ -13,6 +15,25 @@ class FakeProvider:
 
     def generate(self, prompt: str, *, model: str | None = None, temperature: float = 0.0) -> str:
         self.calls += 1
+        return self.content
+
+
+class ConcurrentFakeProvider:
+    def __init__(self, content: str):
+        self.content = content
+        self.calls = 0
+        self.in_flight = 0
+        self.max_in_flight = 0
+        self.lock = threading.Lock()
+
+    def generate(self, prompt: str, *, model: str | None = None, temperature: float = 0.0) -> str:
+        with self.lock:
+            self.calls += 1
+            self.in_flight += 1
+            self.max_in_flight = max(self.max_in_flight, self.in_flight)
+        time.sleep(0.02)
+        with self.lock:
+            self.in_flight -= 1
         return self.content
 
 
@@ -142,3 +163,40 @@ def test_extract_self_review_features_preserves_split(monkeypatch, tmp_path: Pat
     assert rows[0]["split"] == "test"
     assert rows[1]["paper_id"] == "train_paper"
     assert rows[1]["split"] == "train"
+
+
+def test_extract_self_review_features_runs_workers_concurrently(monkeypatch, tmp_path: Path) -> None:
+    for idx in range(4):
+        _paper_dir(tmp_path, paper_id=f"p{idx}")
+    provider = ConcurrentFakeProvider(
+        json.dumps(
+            {
+                "axes": {
+                    axis: {"score": 6, "risk": 0.3, "confidence": 0.7}
+                    for axis in structured_reviewer.REVIEW_AXES
+                },
+                "overall_accept_probability": 0.6,
+            }
+        )
+    )
+    monkeypatch.setattr(
+        structured_reviewer,
+        "_load_iclr_metadata",
+        lambda cfg: {f"p{idx}": {"split": "train", "accept_label": idx % 2} for idx in range(4)},
+    )
+    output_path = tmp_path / "features.jsonl"
+
+    structured_reviewer.extract_self_review_features(
+        processed_root=tmp_path / "processed_papers" / "iclr26",
+        output_path=output_path,
+        cache_dir=tmp_path / "cache",
+        workers=2,
+        provider=provider,
+        config={},
+    )
+
+    rows = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
+
+    assert provider.calls == 4
+    assert provider.max_in_flight >= 2
+    assert [row["paper_id"] for row in rows] == ["p0", "p1", "p2", "p3"]

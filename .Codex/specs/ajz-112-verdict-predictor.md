@@ -14,17 +14,20 @@ Build a DeepSeek-backed structured-feature pipeline over processed ICLR papers a
 3. Support current `data/processed_papers/iclr26` scope first; run external evaluator only where official review text exists.
 4. Train calibrated models from structured features with Logistic Regression always available and LightGBM/XGBoost optional when installed.
 5. Add CLI commands for extracting self-review features, extracting review-evaluator features, and training structured verdict models.
+6. Support bounded `--workers` parallelism for the two LLM extraction steps while preserving deterministic output row order.
 
 ## Constraints
 - Do not include decisions, labels, official reviews, review scores, or source status in self-review prompts.
 - Do not write or print API key values.
 - Cache outputs under ignored `data/` paths and make extraction resumable.
 - Keep Codex provider intact for existing workflows, but do not use it for DeepSeek.
+- Mark train/test split on feature rows and train structured models only on `split=train` rows when split metadata is available.
 
 ## Test Plan
 - Mock provider tests for DeepSeek payload and selection.
 - Unit tests for self-review prompt leakage guard, schema validation, cache resume, and feature flattening.
 - Unit tests for review evaluator missing-review behavior and gap feature construction.
+- Unit tests for worker parallelism and deterministic output ordering in both LLM extraction steps.
 - Unit tests for structured model training on synthetic features with sklearn fallback.
 - Run full local pytest after implementation.
 

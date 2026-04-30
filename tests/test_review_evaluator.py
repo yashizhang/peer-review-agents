@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 
 from koala_strategy.llm import review_evaluator
 from koala_strategy.llm.structured_reviewer import REVIEW_AXES, validate_self_review
@@ -13,6 +15,25 @@ class FakeProvider:
 
     def generate(self, prompt: str, *, model: str | None = None, temperature: float = 0.0) -> str:
         self.calls += 1
+        return self.content
+
+
+class ConcurrentFakeProvider:
+    def __init__(self, content: str):
+        self.content = content
+        self.calls = 0
+        self.in_flight = 0
+        self.max_in_flight = 0
+        self.lock = threading.Lock()
+
+    def generate(self, prompt: str, *, model: str | None = None, temperature: float = 0.0) -> str:
+        with self.lock:
+            self.calls += 1
+            self.in_flight += 1
+            self.max_in_flight = max(self.max_in_flight, self.in_flight)
+        time.sleep(0.02)
+        with self.lock:
+            self.in_flight -= 1
         return self.content
 
 
@@ -139,3 +160,52 @@ def test_extract_review_evaluator_limits_cached_train_papers(tmp_path) -> None:
 
     assert summary["num_papers"] == 1
     assert provider.calls == 1
+
+
+def test_extract_review_evaluator_features_runs_workers_concurrently(tmp_path) -> None:
+    dataset_dir = tmp_path / "koala_iclr2026"
+    dataset_dir.mkdir()
+    (dataset_dir / "global_train.jsonl").write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "paper_id": f"p{idx}",
+                    "title": f"Paper {idx}",
+                    "accept_label": idx % 2,
+                    "official_reviews": [{"summary": "Useful review."}],
+                }
+            )
+            for idx in range(4)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    self_cache_dir = tmp_path / "self_cache"
+    self_cache_dir.mkdir()
+    for idx in range(4):
+        review = _self_review() | {"paper_id": f"p{idx}"}
+        (self_cache_dir / f"p{idx}.json").write_text(json.dumps(review), encoding="utf-8")
+    provider = ConcurrentFakeProvider(
+        json.dumps(
+            {
+                "review_reliabilities": [{"review_id": "r1", "reliability": 0.7}],
+                "weighted_axes": {axis: {"score": 5, "risk": 0.5, "confidence": 0.5} for axis in REVIEW_AXES},
+            }
+        )
+    )
+    output_path = tmp_path / "external.jsonl"
+
+    review_evaluator.extract_review_evaluator_features(
+        self_review_cache_dir=self_cache_dir,
+        output_path=output_path,
+        cache_dir=tmp_path / "external_cache",
+        workers=2,
+        provider=provider,
+        config={"paths": {"koala_dataset_dir": str(dataset_dir)}},
+    )
+
+    rows = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
+
+    assert provider.calls == 4
+    assert provider.max_in_flight >= 2
+    assert [row["paper_id"] for row in rows] == ["p0", "p1", "p2", "p3"]

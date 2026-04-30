@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -189,6 +190,7 @@ def extract_self_review_features(
     output_path: Path | None = None,
     cache_dir: Path | None = None,
     limit: int | None = None,
+    workers: int = 1,
     force: bool = False,
     provider: TextProvider | None = None,
     config: dict[str, Any] | None = None,
@@ -202,8 +204,9 @@ def extract_self_review_features(
     cache = cache_dir or output_root / "self_review_cache"
     metadata = _load_iclr_metadata(cfg)
     text_provider = provider or get_text_provider(cfg)
-    rows: list[dict[str, Any]] = []
-    for paper_dir in papers:
+    max_workers = max(1, int(workers))
+
+    def process_paper(paper_dir: Path) -> dict[str, Any]:
         paper_id = _paper_id_from_dir(paper_dir)
         meta = metadata.get(paper_id, {})
         review = extract_self_review_for_paper(
@@ -220,9 +223,25 @@ def extract_self_review_features(
         if meta.get("accept_label") is not None:
             row["accept_label"] = int(meta["accept_label"])
         row.update(flatten_self_review_features(review))
-        rows.append(row)
+        return row
+
+    if max_workers == 1 or len(papers) <= 1:
+        rows = [process_paper(paper_dir) for paper_dir in papers]
+    else:
+        rows: list[dict[str, Any] | None] = [None] * len(papers)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(process_paper, paper_dir): idx for idx, paper_dir in enumerate(papers)}
+            for future in as_completed(futures):
+                rows[futures[future]] = future.result()
+        rows = [row for row in rows if row is not None]
     write_jsonl(output, rows)
-    summary = {"subset": subset, "num_papers": len(rows), "output": str(output), "cache_dir": str(cache)}
+    summary = {
+        "subset": subset,
+        "num_papers": len(rows),
+        "workers": max_workers,
+        "output": str(output),
+        "cache_dir": str(cache),
+    }
     dump_json(output.with_suffix(".summary.json"), summary)
     return summary
 

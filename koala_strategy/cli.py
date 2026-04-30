@@ -123,6 +123,7 @@ def llm_judge_subset_cmd(
 def extract_self_review_features_cmd(
     subset: str = "iclr26",
     limit: Optional[int] = None,
+    workers: int = 1,
     force: bool = False,
     processed_root: Optional[Path] = None,
     output_path: Optional[Path] = None,
@@ -135,6 +136,7 @@ def extract_self_review_features_cmd(
             output_path=output_path,
             cache_dir=cache_dir,
             limit=limit,
+            workers=workers,
             force=force,
         )
     )
@@ -144,6 +146,7 @@ def extract_self_review_features_cmd(
 def extract_review_evaluator_features_cmd(
     subset: str = "iclr26",
     limit: Optional[int] = None,
+    workers: int = 1,
     force: bool = False,
     self_review_cache_dir: Optional[Path] = None,
     output_path: Optional[Path] = None,
@@ -157,6 +160,7 @@ def extract_review_evaluator_features_cmd(
             output_path=output_path,
             cache_dir=cache_dir,
             limit=limit,
+            workers=workers,
             force=force,
         )
     )
