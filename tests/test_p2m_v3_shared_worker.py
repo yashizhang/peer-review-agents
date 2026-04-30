@@ -134,3 +134,14 @@ def test_download_pdf_falls_back_to_wget(tmp_path: Path) -> None:
     assert bytes_count == len(pdf_bytes)
     assert hashlib.sha256(pdf_bytes).hexdigest() == digest
     assert "wget" in log_path.read_text()
+
+
+def test_run_postprocess_reports_failed_summary(tmp_path: Path, monkeypatch) -> None:
+    def fake_run(command: list[str], timeout: int | None = None) -> tuple[int, str]:
+        return 0, '{"summary_path": "summary.json", "papers": 1, "ok": 0}'
+
+    monkeypatch.setattr(worker, "_run_command", fake_run)
+
+    ok, _ = worker.run_postprocess("paper-1", tmp_path / "marker_raw", tmp_path / "processed_v3")
+
+    assert ok is False

@@ -56,7 +56,7 @@ def main() -> None:
             if paper_id:
                 source_map[paper_id] = row
 
-    target_root = args.run_root.parent / args.subset
+    target_root = args.run_root / args.subset
     target_root.mkdir(parents=True, exist_ok=True)
 
     copied = 0

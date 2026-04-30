@@ -47,8 +47,10 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def _paths(input_root: Path, paper_id: str) -> dict[str, Path]:
     paper_dir = input_root / paper_id
+    root_parse_report = paper_dir / "parse_report.json"
+    marker_parse_report = paper_dir / "marker_markdown" / paper_id / "parse_report.json"
     return {
-        "parse_report": paper_dir / "parse_report.json",
+        "parse_report": root_parse_report if root_parse_report.exists() else marker_parse_report,
         "blocks": paper_dir / "marker_chunks" / paper_id / f"{paper_id}.json",
         "markdown": paper_dir / "marker_markdown" / paper_id / f"{paper_id}.md",
         "markdown_dir": paper_dir / "marker_markdown" / paper_id,

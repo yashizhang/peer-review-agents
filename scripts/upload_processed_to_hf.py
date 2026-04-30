@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import tempfile
 from pathlib import Path
 
 
@@ -27,6 +29,61 @@ def _load_manifest(path: Path) -> set[str]:
     return {row["paper_id"] for row in payload if isinstance(row, dict) and row.get("paper_id")}
 
 
+def _copy_subset_metadata(subset_root: Path, destination: Path) -> None:
+    for path in subset_root.iterdir():
+        if path.is_file() and not path.name.endswith(".log"):
+            shutil.copy2(path, destination / path.name)
+
+
+def _stage_filtered_subset(subset_root: Path, allowed: set[str], staging_root: Path) -> tuple[Path, int]:
+    staged_subset = staging_root / subset_root.name
+    staged_subset.mkdir(parents=True, exist_ok=True)
+    _copy_subset_metadata(subset_root, staged_subset)
+    copied = 0
+    for paper_dir in sorted(path for path in subset_root.iterdir() if path.is_dir()):
+        if paper_dir.name not in allowed:
+            continue
+        shutil.copytree(paper_dir, staged_subset / paper_dir.name)
+        copied += 1
+    return staged_subset, copied
+
+
+def _paper_dir_count(subset_root: Path, allowed: set[str] | None) -> int:
+    return sum(
+        1
+        for paper_dir in subset_root.iterdir()
+        if paper_dir.is_dir() and (allowed is None or paper_dir.name in allowed)
+    )
+
+
+def _upload_subset(api, *, subset_root: Path, subset: str, args: argparse.Namespace, token: str, allowed: set[str] | None) -> None:
+    if allowed is None:
+        upload_root = subset_root
+        count = _paper_dir_count(subset_root, allowed)
+        api.upload_folder(
+            folder_path=str(upload_root),
+            path_in_repo=subset,
+            repo_id=args.hf_repo,
+            repo_type="dataset",
+            token=token,
+            allow_patterns="*" if args.overwrite else None,
+            ignore_patterns=["*.log"],
+        )
+    else:
+        with tempfile.TemporaryDirectory(prefix=f"{subset}_hf_upload_") as tmp:
+            upload_root, count = _stage_filtered_subset(subset_root, allowed, Path(tmp))
+            api.upload_folder(
+                folder_path=str(upload_root),
+                path_in_repo=subset,
+                repo_id=args.hf_repo,
+                repo_type="dataset",
+                token=token,
+                allow_patterns="*" if args.overwrite else None,
+                ignore_patterns=["*.log"],
+            )
+    print(f"uploaded subset {subset} papers={count}")
+
+
 def main() -> None:
     args = parse_args()
     try:
@@ -49,21 +106,7 @@ def main() -> None:
         if not subset_root.exists():
             print(f"skip subset {subset}: missing path {subset_root}")
             continue
-        for paper_dir in sorted(p.name for p in subset_root.iterdir() if p.is_dir()):
-            if allowed is not None and paper_dir not in allowed:
-                continue
-            local_path = subset_root / paper_dir
-            upload_path = f"{subset}/{paper_dir}"
-            api.upload_folder(
-                folder_path=str(local_path),
-                path_in_repo=upload_path,
-                repo_id=args.hf_repo,
-                repo_type="dataset",
-                token=token,
-                allow_patterns="*" if args.overwrite else None,
-                ignore_patterns=["*.log"],
-            )
-            print(f"uploaded {upload_path}")
+        _upload_subset(api, subset_root=subset_root, subset=subset, args=args, token=token, allowed=allowed)
 
 
 if __name__ == "__main__":

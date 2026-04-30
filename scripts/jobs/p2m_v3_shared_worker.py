@@ -198,8 +198,17 @@ def run_postprocess(paper_id: str, marker_root: Path, output_root: Path) -> tupl
         paper_id,
     ]
     code, log = _run_command(command, timeout=1200)
+    output_root.mkdir(parents=True, exist_ok=True)
     (output_root / f"{paper_id}_postprocess.log").write_text(log, encoding="utf-8")
-    return code == 0, log
+    if code != 0:
+        return False, log
+    try:
+        summary = json.loads(log)
+    except json.JSONDecodeError:
+        return True, log
+    if isinstance(summary, dict) and summary.get("papers") is not None and summary.get("ok") is not None:
+        return int(summary["ok"]) >= int(summary["papers"]), log
+    return True, log
 
 
 def _ensure_parse_report(
