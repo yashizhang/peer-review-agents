@@ -67,10 +67,17 @@ class DeepSeekTextProvider:
     def generate(self, prompt: str, *, model: str | None = None, temperature: float = 0.0) -> str:
         if not self.api_key:
             raise RuntimeError("DEEPSEEK_API_KEY is required for KOALA_LLM_PROVIDER=deepseek.")
+        thinking_type = str(os.getenv("DEEPSEEK_THINKING", "disabled")).strip().lower()
+        if thinking_type in {"1", "true", "yes", "on", "enabled"}:
+            thinking_type = "enabled"
+        elif thinking_type in {"0", "false", "no", "off", "disabled", ""}:
+            thinking_type = "disabled"
+        if thinking_type not in {"enabled", "disabled", "auto"}:
+            thinking_type = "disabled"
         payload = {
             "model": model or self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "thinking": {"type": "disabled"},
+            "thinking": {"type": thinking_type},
             "stream": False,
             "temperature": temperature,
         }

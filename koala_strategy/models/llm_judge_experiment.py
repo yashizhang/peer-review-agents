@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+import os
+import time
 from typing import Any
 
 import numpy as np
@@ -13,6 +17,16 @@ from koala_strategy.llm.review_judge import llm_probability_for_blend, run_llm_r
 from koala_strategy.models.export_bundle import generate_prediction_bundle
 from koala_strategy.models.predict_paper_only import load_model_artifacts
 from koala_strategy.utils import dump_json, ensure_dir
+
+
+@dataclass(frozen=True)
+class JudgeTaskResult:
+    position: int
+    idx: int
+    paper: Any
+    bundle: Any
+    judge: dict[str, Any]
+    elapsed: float
 
 
 def _metrics(y: np.ndarray, p: np.ndarray) -> dict[str, float]:
@@ -74,12 +88,83 @@ def _blend_predictions(base: np.ndarray, llm: np.ndarray, conf: np.ndarray) -> d
     return out
 
 
+def _run_one_judge_task(
+    position: int,
+    idx: int,
+    paper: Any,
+    bundle: Any,
+    *,
+    total: int,
+    config: dict[str, Any],
+    force: bool,
+    judge_runner: Any,
+) -> JudgeTaskResult:
+    started = time.monotonic()
+    print(f"[llm-judge] {position}/{total} start paper_id={paper.paper_id}", flush=True)
+    judge = judge_runner(paper, bundle, config=config, force=force)
+    elapsed = time.monotonic() - started
+    print(
+        f"[llm-judge] {position}/{total} done paper_id={paper.paper_id} "
+        f"fallback={bool(judge.get('fallback', False))} elapsed={elapsed:.1f}s "
+        f"raw={judge.get('raw_response_path', '')}",
+        flush=True,
+    )
+    return JudgeTaskResult(position=position, idx=idx, paper=paper, bundle=bundle, judge=judge, elapsed=elapsed)
+
+
+def _run_judge_tasks(
+    tasks: list[tuple[int, int, Any, Any]],
+    *,
+    total: int,
+    config: dict[str, Any],
+    force: bool,
+    workers: int,
+    judge_runner: Any = run_llm_review_judge,
+) -> list[JudgeTaskResult]:
+    workers = max(1, int(workers))
+    if workers == 1:
+        return [
+            _run_one_judge_task(
+                position,
+                idx,
+                paper,
+                bundle,
+                total=total,
+                config=config,
+                force=force,
+                judge_runner=judge_runner,
+            )
+            for position, idx, paper, bundle in tasks
+        ]
+
+    results: list[JudgeTaskResult | None] = [None] * len(tasks)
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(
+                _run_one_judge_task,
+                position,
+                idx,
+                paper,
+                bundle,
+                total=total,
+                config=config,
+                force=force,
+                judge_runner=judge_runner,
+            ): position - 1
+            for position, idx, paper, bundle in tasks
+        }
+        for future in as_completed(futures):
+            results[futures[future]] = future.result()
+    return [result for result in results if result is not None]
+
+
 def run_llm_judge_subset_experiment(
     limit: int = 24,
     selection: str = "balanced_uncertain",
     force: bool = False,
     seed: int = 42,
     prompt_profile: str | None = None,
+    workers: int = 1,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     cfg = config or load_config()
@@ -88,6 +173,11 @@ def run_llm_judge_subset_experiment(
     papers = load_public_papers(config=cfg)
     labels = load_test_labels(config=cfg)
     labeled = [paper for paper in papers if paper.paper_id in labels]
+    if str(os.getenv("LLM_JUDGE_USE_EXTERNAL_REVIEW_FEATURES", "0")).strip().lower() in {"1", "true", "yes", "on", "enabled"}:
+        for paper in labeled:
+            row = labels.get(paper.paper_id, {})
+            if isinstance(row, dict) and isinstance(getattr(paper, "metadata", None), dict):
+                paper.metadata.update(row)
     artifacts = load_model_artifacts(cfg)
     bundles = [generate_prediction_bundle(paper, artifacts, cfg, save=True) for paper in labeled]
     y_all = np.asarray([int(labels[paper.paper_id]["accept_label"]) for paper in labeled], dtype=int)
@@ -95,10 +185,19 @@ def run_llm_judge_subset_experiment(
     indices = _select_indices(p_all, y_all, limit, selection, seed)
 
     rows: list[dict[str, Any]] = []
-    for idx in indices:
-        paper = labeled[idx]
-        bundle = bundles[idx]
-        judge = run_llm_review_judge(paper, bundle, config=cfg, force=force)
+    profile = str(cfg.get("models", {}).get("llm_judge_prompt_profile") or "default")
+    model = str(cfg.get("models", {}).get("codex_model", "unknown"))
+    print(
+        f"[llm-judge] selected={len(indices)} model={model} profile={profile} "
+        f"selection={selection} seed={seed} force={force} workers={workers}",
+        flush=True,
+    )
+    tasks = [(position, idx, labeled[idx], bundles[idx]) for position, idx in enumerate(indices, start=1)]
+    judge_results = _run_judge_tasks(tasks, total=len(indices), config=cfg, force=force, workers=workers)
+    for result in judge_results:
+        paper = result.paper
+        bundle = result.bundle
+        judge = result.judge
         rows.append(
             {
                 "paper_id": paper.paper_id,
@@ -113,6 +212,10 @@ def run_llm_judge_subset_experiment(
                 "strongest_accept_signal": judge.get("strongest_accept_signal", ""),
                 "strongest_reject_signal": judge.get("strongest_reject_signal", ""),
                 "short_rationale": judge.get("short_rationale", ""),
+                "llm_model": judge.get("model", ""),
+                "llm_cache_path": judge.get("cache_path", ""),
+                "llm_raw_response_path": judge.get("raw_response_path", ""),
+                "llm_raw_response_hash": judge.get("raw_response_hash", ""),
             }
         )
 
@@ -126,16 +229,17 @@ def run_llm_judge_subset_experiment(
     best_by_log_loss = min(metrics, key=lambda name: metrics[name]["log_loss"])
     best_by_auroc = max(metrics, key=lambda name: -1 if np.isnan(metrics[name]["auroc"]) else metrics[name]["auroc"])
     out_dir = ensure_dir(resolve_path(cfg, "model_dir") / "llm_judge")
-    profile = str(cfg.get("models", {}).get("llm_judge_prompt_profile") or "default")
     safe_profile = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in profile)
     df.to_csv(out_dir / f"subset_{selection}_{len(df)}_{safe_profile}.csv", index=False)
     result = {
         "limit": limit,
         "selection": selection,
         "prompt_profile": profile,
+        "workers": int(workers),
         "num_examples": len(df),
         "num_accept": int(y.sum()),
         "num_reject": int(len(y) - y.sum()),
+        "num_fallback": int(df["llm_fallback"].sum()),
         "model": cfg.get("models", {}).get("codex_model"),
         "metrics": metrics,
         "best_by_log_loss": best_by_log_loss,

@@ -115,8 +115,18 @@ def llm_judge_subset_cmd(
     force: bool = False,
     seed: int = 42,
     prompt_profile: str = "",
+    workers: int = 1,
 ) -> None:
-    print(run_llm_judge_subset_experiment(limit=limit, selection=selection, force=force, seed=seed, prompt_profile=prompt_profile or None))
+    print(
+        run_llm_judge_subset_experiment(
+            limit=limit,
+            selection=selection,
+            force=force,
+            seed=seed,
+            prompt_profile=prompt_profile or None,
+            workers=workers,
+        )
+    )
 
 
 @app.command("extract-self-review-features")

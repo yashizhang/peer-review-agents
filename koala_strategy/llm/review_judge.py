@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,14 @@ from koala_strategy.utils import clamp, content_hash, dump_json, ensure_dir
 
 
 PROMPT_VERSION = "llm_review_judge_v2"
+REQUIRED_LLM_JUDGE_FIELDS = (
+    "accept_probability",
+    "verdict_score",
+    "confidence",
+    "strongest_accept_signal",
+    "strongest_reject_signal",
+    "short_rationale",
+)
 
 
 LEAKY_WORDS = [
@@ -45,6 +54,60 @@ def _trim(text: str, max_chars: int) -> str:
     return text[: int(max_chars * 0.75)] + "\n...\n" + text[-int(max_chars * 0.25) :]
 
 
+def _bool_from_env(name: str) -> bool:
+    value = str(os.getenv(name, "0")).strip().lower()
+    return value in {"1", "true", "yes", "on", "enabled"}
+
+
+def _external_review_features_enabled() -> bool:
+    return _bool_from_env("LLM_JUDGE_USE_EXTERNAL_REVIEW_FEATURES")
+
+
+def _review_score_summary(paper: PaperRecord) -> dict[str, Any]:
+    meta = paper.metadata if isinstance(paper.metadata, dict) else {}
+    if not isinstance(meta, dict):
+        return {}
+    summary: dict[str, Any] = {}
+    review_scores = meta.get("review_scores")
+    if isinstance(review_scores, dict) and review_scores:
+        summary["review_scores"] = {
+            "soundness": safe_mean(review_scores.get("soundness")),
+            "confidence_mean": safe_mean(review_scores.get("confidence_mean")),
+            "presentation": safe_mean(review_scores.get("presentation")),
+            "rating_mean": safe_mean(review_scores.get("rating_mean")),
+            "contribution": safe_mean(review_scores.get("contribution")),
+        }
+    official_count = meta.get("official_review_count")
+    if official_count is not None:
+        try:
+            summary["official_review_count"] = int(official_count)
+        except (TypeError, ValueError):
+            pass
+    suggested_score = meta.get("suggested_verdict_score")
+    if suggested_score is not None:
+        try:
+            summary["suggested_verdict_score"] = float(suggested_score)
+        except (TypeError, ValueError):
+            pass
+    source_status = meta.get("source_status")
+    if source_status:
+        summary["source_status"] = str(source_status)
+    return summary
+
+
+def safe_mean(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, (list, tuple)):
+        values = [float(v) for v in value if isinstance(v, (int, float))]
+        if not values:
+            return None
+        return float(sum(values) / len(values))
+    return None
+
+
 def llm_evidence_payload(paper: PaperRecord, prediction: PredictionBundle) -> dict[str, Any]:
     payload = parsed_payload_for_paper(paper.paper_id) or {}
     tables = []
@@ -59,6 +122,10 @@ def llm_evidence_payload(paper: PaperRecord, prediction: PredictionBundle) -> di
         )
     sections = payload.get("sections") or {}
     selected_sections_text = sanitized_sections_text(sections, max_chars_per_section=3200)
+    if _external_review_features_enabled():
+        review_features = _review_score_summary(paper)
+        if review_features:
+            payload = {**payload, "official_review_features": review_features}
     return {
         "paper_id": paper.paper_id,
         "title": paper.title,
@@ -238,6 +305,10 @@ def _cache_path(paper_id: str, model: str, prompt: str, config: dict[str, Any]) 
     return ensure_dir(cache_root / safe_model) / f"{paper_id}_{key}.json"
 
 
+def _raw_response_path(cache_path: Path) -> Path:
+    return cache_path.with_suffix(".raw.txt")
+
+
 def _fallback(prediction: PredictionBundle, error: str | None = None) -> dict[str, Any]:
     p = float(prediction.paper_only.get("p_accept", 0.5))
     lo, hi = prediction.paper_only.get("recommended_score_range", [4.5, 5.5])
@@ -255,6 +326,11 @@ def _fallback(prediction: PredictionBundle, error: str | None = None) -> dict[st
 
 
 def validate_llm_judge(data: dict[str, Any], prediction: PredictionBundle) -> dict[str, Any]:
+    if not isinstance(data, dict):
+        raise ValueError("LLM judge output must be a JSON object.")
+    missing = [field for field in REQUIRED_LLM_JUDGE_FIELDS if field not in data]
+    if missing:
+        raise ValueError(f"LLM judge output missing required fields: {', '.join(missing)}")
     fallback = _fallback(prediction)
     out = {**fallback, **data, "fallback": False}
     out["accept_probability"] = float(clamp(float(out.get("accept_probability", fallback["accept_probability"])), 0.0, 1.0))
@@ -294,14 +370,17 @@ def run_llm_review_judge(
     path = _cache_path(paper.paper_id, model, prompt, cfg)
     if path.exists() and not force:
         return json.loads(path.read_text(encoding="utf-8"))
+    raw_path = _raw_response_path(path)
     provider = get_text_provider(cfg)
     try:
         raw = provider.generate(prompt, model=model, temperature=0.0)
+        raw_path.write_text(raw, encoding="utf-8")
         data = validate_llm_judge(extract_json_object(raw), prediction)
         data["model"] = model
         data["prompt_version"] = PROMPT_VERSION
         data["prompt_profile"] = _prompt_profile(cfg)
         data["cache_path"] = str(path)
+        data["raw_response_path"] = str(raw_path)
         data["raw_response_hash"] = content_hash(raw)
     except Exception as exc:  # noqa: BLE001
         data = _fallback(prediction, error=str(exc)[:300])
@@ -309,6 +388,9 @@ def run_llm_review_judge(
         data["prompt_version"] = PROMPT_VERSION
         data["prompt_profile"] = _prompt_profile(cfg)
         data["cache_path"] = str(path)
+        if raw_path.exists():
+            data["raw_response_path"] = str(raw_path)
+            data["raw_response_hash"] = content_hash(raw_path.read_text(encoding="utf-8"))
     dump_json(path, data)
     return data
 
