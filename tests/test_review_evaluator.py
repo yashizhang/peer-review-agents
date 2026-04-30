@@ -209,3 +209,52 @@ def test_extract_review_evaluator_features_runs_workers_concurrently(tmp_path) -
     assert provider.calls == 4
     assert provider.max_in_flight >= 2
     assert [row["paper_id"] for row in rows] == ["p0", "p1", "p2", "p3"]
+
+
+def test_extract_review_evaluator_features_uses_explicit_paper_order(tmp_path) -> None:
+    dataset_dir = tmp_path / "koala_iclr2026"
+    dataset_dir.mkdir()
+    (dataset_dir / "global_train.jsonl").write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "paper_id": f"p{idx}",
+                    "title": f"Paper {idx}",
+                    "accept_label": idx % 2,
+                    "official_reviews": [{"summary": "Useful review."}],
+                }
+            )
+            for idx in range(3)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    self_cache_dir = tmp_path / "self_cache"
+    self_cache_dir.mkdir()
+    for idx in range(3):
+        review = validate_self_review({"axes": {}, "overall_accept_probability": 0.5}, paper_id=f"p{idx}", model="m")
+        (self_cache_dir / f"p{idx}.json").write_text(json.dumps(review), encoding="utf-8")
+
+    provider = FakeProvider(
+        json.dumps(
+            {
+                "review_reliabilities": [{"review_id": "r1", "reliability": 0.7}],
+                "weighted_axes": {axis: {"score": 5, "risk": 0.5, "confidence": 0.5} for axis in REVIEW_AXES},
+            }
+        )
+    )
+    output_path = tmp_path / "external.jsonl"
+
+    review_evaluator.extract_review_evaluator_features(
+        self_review_cache_dir=self_cache_dir,
+        output_path=output_path,
+        cache_dir=tmp_path / "external_cache",
+        workers=1,
+        paper_ids=["p2", "p0"],
+        shuffle=False,
+        provider=provider,
+        config={"paths": {"koala_dataset_dir": str(dataset_dir)}},
+    )
+
+    rows = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
+    assert [row["paper_id"] for row in rows] == ["p2", "p0"]

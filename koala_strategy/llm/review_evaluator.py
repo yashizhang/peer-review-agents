@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
@@ -192,6 +193,9 @@ def extract_review_evaluator_features(
     cache_dir: Path | None = None,
     limit: int | None = None,
     workers: int = 1,
+    paper_ids: list[str] | None = None,
+    shuffle: bool = False,
+    seed: int = 42,
     force: bool = False,
     provider: TextProvider | None = None,
     config: dict[str, Any] | None = None,
@@ -202,11 +206,12 @@ def extract_review_evaluator_features(
     output = output_path or output_root / "review_evaluator_features.jsonl"
     cache = cache_dir or output_root / "review_evaluator_cache"
     text_provider = provider or get_text_provider(cfg)
-    paper_ids = sorted(
-        path.stem
-        for path in self_review_cache_dir.glob("*.json")
-        if path.stem in train_rows
-    )
+    if paper_ids is None:
+        paper_ids = sorted(path.stem for path in self_review_cache_dir.glob("*.json") if path.stem in train_rows)
+    else:
+        paper_ids = [paper_id for paper_id in paper_ids if paper_id in train_rows]
+    if shuffle:
+        random.Random(seed).shuffle(paper_ids)
     if limit is not None:
         paper_ids = paper_ids[:limit]
     max_workers = max(1, int(workers))
@@ -244,6 +249,7 @@ def extract_review_evaluator_features(
         "workers": max_workers,
         "output": str(output),
         "cache_dir": str(cache),
+        "paper_ids": [row["paper_id"] for row in rows],
     }
     dump_json(output.with_suffix(".summary.json"), summary)
     return summary

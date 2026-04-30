@@ -13,6 +13,7 @@ def test_structured_pipeline_commands_are_registered() -> None:
     assert result.exit_code == 0
     assert "extract-self-review-features" in result.output
     assert "extract-review-evaluator-features" in result.output
+    assert "run-deepseek-pipeline" in result.output
     assert "train-structured-verdict-model" in result.output
 
 

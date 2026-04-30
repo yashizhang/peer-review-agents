@@ -237,6 +237,7 @@ def _ensure_parse_report(
         "ok": parse_ok,
         "elapsed_seconds": elapsed_seconds,
     }
+    paper_root.mkdir(parents=True, exist_ok=True)
     (paper_root / "parse_report.json").write_text(json.dumps(parse_report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 

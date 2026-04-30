@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 import json
 import threading
 import time
@@ -200,3 +201,45 @@ def test_extract_self_review_features_runs_workers_concurrently(monkeypatch, tmp
     assert provider.calls == 4
     assert provider.max_in_flight >= 2
     assert [row["paper_id"] for row in rows] == ["p0", "p1", "p2", "p3"]
+
+
+def test_extract_self_review_features_can_shuffle_papers(monkeypatch, tmp_path: Path) -> None:
+    for paper_id in ["p0", "p1", "p2"]:
+        _paper_dir(tmp_path, paper_id=paper_id)
+    provider = FakeProvider(
+        json.dumps(
+            {
+                "axes": {
+                    axis: {"score": 6, "risk": 0.3, "confidence": 0.7}
+                    for axis in structured_reviewer.REVIEW_AXES
+                },
+                "overall_accept_probability": 0.6,
+            }
+        )
+    )
+    monkeypatch.setattr(
+        structured_reviewer,
+        "_load_iclr_metadata",
+        lambda cfg: {},
+    )
+    output_path = tmp_path / "features.jsonl"
+    ordered = [
+        tmp_path / "processed_papers" / "iclr26" / "p0",
+        tmp_path / "processed_papers" / "iclr26" / "p1",
+        tmp_path / "processed_papers" / "iclr26" / "p2",
+    ]
+    random.Random(7).shuffle(ordered)
+
+    structured_reviewer.extract_self_review_features(
+        processed_root=tmp_path / "processed_papers" / "iclr26",
+        output_path=output_path,
+        cache_dir=tmp_path / "cache",
+        workers=1,
+        shuffle=True,
+        seed=7,
+        provider=provider,
+        config={},
+    )
+
+    rows = [json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()]
+    assert [row["paper_id"] for row in rows] == [p.name for p in ordered]

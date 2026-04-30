@@ -176,6 +176,59 @@ def extract_review_evaluator_features_cmd(
     )
 
 
+@app.command("run-deepseek-pipeline")
+def run_deepseek_pipeline_cmd(
+    subset: str = "iclr26",
+    limit: int | None = None,
+    workers: int = 16,
+    seed: int = 42,
+    force: bool = False,
+    randomize: bool = typer.Option(True, "--randomize/--no-randomize"),
+    processed_root: Optional[Path] = None,
+    self_output_path: Optional[Path] = None,
+    self_cache_dir: Optional[Path] = None,
+    review_output_path: Optional[Path] = None,
+    review_cache_dir: Optional[Path] = None,
+) -> None:
+    cfg = load_config()
+    output_root = Path("data") / "structured_features" / subset
+    self_output = self_output_path or output_root / "self_review_features.jsonl"
+    self_cache = self_cache_dir or output_root / "self_review_cache"
+    review_output = review_output_path or output_root / "review_evaluator_features.jsonl"
+    review_cache = review_cache_dir or output_root / "review_evaluator_cache"
+
+    self_summary = extract_self_review_features(
+        subset=subset,
+        processed_root=processed_root,
+        output_path=self_output,
+        cache_dir=self_cache,
+        limit=limit,
+        workers=workers,
+        shuffle=randomize,
+        seed=seed,
+        force=force,
+    )
+
+    review_summary = extract_review_evaluator_features(
+        subset=subset,
+        self_review_cache_dir=self_cache,
+        output_path=review_output,
+        cache_dir=review_cache,
+        workers=workers,
+        paper_ids=list(self_summary.get("paper_ids", [])),
+        shuffle=False,
+        force=force,
+        config=cfg,
+    )
+
+    print(
+        {
+            "self_review": self_summary,
+            "review_evaluator": review_summary,
+        }
+    )
+
+
 @app.command("train-structured-verdict-model")
 def train_structured_verdict_model_cmd(
     subset: str = "iclr26",

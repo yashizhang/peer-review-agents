@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
@@ -191,12 +192,18 @@ def extract_self_review_features(
     cache_dir: Path | None = None,
     limit: int | None = None,
     workers: int = 1,
+    shuffle: bool = False,
+    seed: int = 42,
+    paper_dirs: list[Path] | None = None,
     force: bool = False,
     provider: TextProvider | None = None,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     cfg = config or load_config()
-    papers = iter_processed_paper_dirs(subset, processed_root)
+    papers = list(paper_dirs) if paper_dirs is not None else iter_processed_paper_dirs(subset, processed_root)
+    papers = sorted(papers, key=lambda path: path.name)
+    if shuffle:
+        random.Random(seed).shuffle(papers)
     if limit is not None:
         papers = papers[:limit]
     output_root = _default_output_root(subset)
@@ -241,6 +248,7 @@ def extract_self_review_features(
         "workers": max_workers,
         "output": str(output),
         "cache_dir": str(cache),
+        "paper_ids": [row["paper_id"] for row in rows],
     }
     dump_json(output.with_suffix(".summary.json"), summary)
     return summary

@@ -145,3 +145,23 @@ def test_run_postprocess_reports_failed_summary(tmp_path: Path, monkeypatch) -> 
     ok, _ = worker.run_postprocess("paper-1", tmp_path / "marker_raw", tmp_path / "processed_v3")
 
     assert ok is False
+
+
+def test_ensure_parse_report_creates_parent_directory(tmp_path: Path) -> None:
+    paper_root = tmp_path / "marker_raw" / "paper-1" / "marker_markdown" / "paper-1"
+    pdf_path = tmp_path / "paper-1.pdf"
+    pdf_path.write_bytes(b"%PDF-1.7\n")
+
+    worker._ensure_parse_report(
+        paper_root,
+        paper_id="paper-1",
+        pdf_path=pdf_path,
+        download_url="https://openreview.net/pdf?id=paper-1",
+        parse_ok=True,
+        page_count=3,
+        sha256="abc123",
+        bytes_count=9,
+        elapsed_seconds=1.5,
+    )
+
+    assert (paper_root / "parse_report.json").exists()

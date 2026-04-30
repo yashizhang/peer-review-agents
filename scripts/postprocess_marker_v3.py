@@ -49,12 +49,19 @@ def _paths(input_root: Path, paper_id: str) -> dict[str, Path]:
     paper_dir = input_root / paper_id
     root_parse_report = paper_dir / "parse_report.json"
     marker_parse_report = paper_dir / "marker_markdown" / paper_id / "parse_report.json"
+    blocks = paper_dir / "marker_chunks" / paper_id / f"{paper_id}.json"
+    markdown = paper_dir / "marker_markdown" / paper_id / f"{paper_id}.md"
+    if not blocks.exists():
+        blocks = next(iter(sorted((paper_dir / "marker_chunks").glob("*/*.json"))), blocks)
+    if not markdown.exists():
+        markdown = next(iter(sorted((paper_dir / "marker_markdown").glob("*/*.md"))), markdown)
+    markdown_dir = markdown.parent
     return {
         "parse_report": root_parse_report if root_parse_report.exists() else marker_parse_report,
-        "blocks": paper_dir / "marker_chunks" / paper_id / f"{paper_id}.json",
-        "markdown": paper_dir / "marker_markdown" / paper_id / f"{paper_id}.md",
-        "markdown_dir": paper_dir / "marker_markdown" / paper_id,
-        "marker_meta": paper_dir / "marker_markdown" / paper_id / f"{paper_id}_meta.json",
+        "blocks": blocks,
+        "markdown": markdown,
+        "markdown_dir": markdown_dir,
+        "marker_meta": markdown_dir / f"{markdown.stem}_meta.json",
     }
 
 

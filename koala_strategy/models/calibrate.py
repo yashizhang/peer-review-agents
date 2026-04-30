@@ -10,6 +10,19 @@ def safe_logit(p: np.ndarray | float, eps: float = 1e-5) -> np.ndarray:
     return np.log(arr / (1.0 - arr))
 
 
+def top_k_precision(y_true: np.ndarray, p_accept: np.ndarray, k_frac: float = 0.27) -> float:
+    y = np.asarray(y_true, dtype=int)
+    p = np.asarray(p_accept, dtype=float)
+    n = len(y)
+    if n == 0:
+        return 0.0
+    if n == 1:
+        return float(y.mean())
+    k = max(1, int(round(k_frac * n)))
+    idx = np.argsort(-p)[:k]
+    return float(y[idx].mean())
+
+
 def classification_metrics(y_true: np.ndarray, p_accept: np.ndarray) -> dict[str, float | list[dict[str, float]]]:
     y = np.asarray(y_true, dtype=int)
     p = np.clip(np.asarray(p_accept, dtype=float), 1e-6, 1 - 1e-6)
@@ -19,9 +32,7 @@ def classification_metrics(y_true: np.ndarray, p_accept: np.ndarray) -> dict[str
         "brier": float(brier_score_loss(y, p)),
         "log_loss": float(log_loss(y, p, labels=[0, 1])),
     }
-    cutoff = np.quantile(p, 0.73)
-    selected = p >= cutoff
-    metrics["top_27_percent_precision"] = float(y[selected].mean()) if selected.any() else 0.0
+    metrics["top_27_percent_precision"] = top_k_precision(y, p, k_frac=0.27)
     bins: list[dict[str, float]] = []
     for lo, hi in zip(np.linspace(0, 1, 11)[:-1], np.linspace(0, 1, 11)[1:]):
         mask = (p >= lo) & (p < hi if hi < 1 else p <= hi)
@@ -37,4 +48,3 @@ def classification_metrics(y_true: np.ndarray, p_accept: np.ndarray) -> dict[str
             )
     metrics["calibration_bins"] = bins
     return metrics
-

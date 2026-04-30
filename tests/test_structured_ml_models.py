@@ -38,7 +38,16 @@ def test_train_structured_models_with_logistic_fallback(tmp_path: Path) -> None:
     assert "logistic" in result["models"]
     assert result["models"]["logistic"]["metrics"]["brier"] >= 0.0
     assert (tmp_path / "structured_logistic.pkl").exists()
+    assert (tmp_path / "structured_logistic_raw_oof_predictions.npy").exists()
+    assert (tmp_path / "structured_logistic_calibrated_oof_predictions.npy").exists()
     assert (tmp_path / "structured_model_metrics.json").exists()
+    assert (tmp_path / "structured_ensemble_weighted.pkl").exists()
+    assert (tmp_path / "structured_ensemble_weighted_raw_oof_predictions.npy").exists()
+    assert (tmp_path / "structured_ensemble_weighted_calibrated_oof_predictions.npy").exists()
+    assert (tmp_path / "structured_ensemble_metrics.json").exists()
+    assert result["ensemble"]["weights"]
+    assert abs(sum(result["ensemble"]["weights"].values()) - 1.0) < 1e-6
+    assert all(weight >= 0.0 for weight in result["ensemble"]["weights"].values())
     assert result["feature_columns"]
 
 
