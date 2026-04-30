@@ -156,7 +156,8 @@ When a command might take more than about 30 seconds:
   - `HF_DATASETS_CACHE`
   - `TORCH_EXTENSIONS_DIR`
   - `WANDB_CACHE_DIR`
-- Do not use Mila `unkillable` or `short-unkillable` partitions unless the user explicitly requests them.
+- For Mila debug/smoke runs, default to an interactive `unkillable` `salloc` allocation because it starts quickly and shortens iteration time.
+- Do not use Mila `unkillable` or `short-unkillable` partitions for pilot/formal runs unless the user explicitly requests them.
 - Default batch intent is the long queue. If a non-unkillable request is delayed or rejected, report the scheduler reason before trying another partition.
 - Existing suitable allocations may be reused, but release incompatible interactive allocations before requesting new ones.
 

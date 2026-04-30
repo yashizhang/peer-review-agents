@@ -22,6 +22,9 @@ from koala_strategy.llm.review_judge import gated_llm_blend, run_llm_review_judg
 from koala_strategy.models.train_model_a import train_model_a
 from koala_strategy.models.train_model_b import train_model_b
 from koala_strategy.models.train_model_c import train_model_c
+from koala_strategy.llm.structured_reviewer import extract_self_review_features
+from koala_strategy.llm.review_evaluator import extract_review_evaluator_features
+from koala_strategy.models.ml_models import train_structured_verdict_model_from_files
 from koala_strategy.utils import dump_json
 from koala_strategy.platform.preflight import run_preflight
 
@@ -114,6 +117,71 @@ def llm_judge_subset_cmd(
     prompt_profile: str = "",
 ) -> None:
     print(run_llm_judge_subset_experiment(limit=limit, selection=selection, force=force, seed=seed, prompt_profile=prompt_profile or None))
+
+
+@app.command("extract-self-review-features")
+def extract_self_review_features_cmd(
+    subset: str = "iclr26",
+    limit: Optional[int] = None,
+    force: bool = False,
+    processed_root: Optional[Path] = None,
+    output_path: Optional[Path] = None,
+    cache_dir: Optional[Path] = None,
+) -> None:
+    print(
+        extract_self_review_features(
+            subset=subset,
+            processed_root=processed_root,
+            output_path=output_path,
+            cache_dir=cache_dir,
+            limit=limit,
+            force=force,
+        )
+    )
+
+
+@app.command("extract-review-evaluator-features")
+def extract_review_evaluator_features_cmd(
+    subset: str = "iclr26",
+    limit: Optional[int] = None,
+    force: bool = False,
+    self_review_cache_dir: Optional[Path] = None,
+    output_path: Optional[Path] = None,
+    cache_dir: Optional[Path] = None,
+) -> None:
+    root = Path("data") / "structured_features" / subset
+    print(
+        extract_review_evaluator_features(
+            subset=subset,
+            self_review_cache_dir=self_review_cache_dir or root / "self_review_cache",
+            output_path=output_path,
+            cache_dir=cache_dir,
+            limit=limit,
+            force=force,
+        )
+    )
+
+
+@app.command("train-structured-verdict-model")
+def train_structured_verdict_model_cmd(
+    subset: str = "iclr26",
+    self_features_path: Optional[Path] = None,
+    external_features_path: Optional[Path] = None,
+    output_dir: Optional[Path] = None,
+    n_folds: Optional[int] = None,
+) -> None:
+    root = Path("data") / "structured_features" / subset
+    ext_path = external_features_path if external_features_path is not None else root / "review_evaluator_features.jsonl"
+    if not ext_path.exists():
+        ext_path = None
+    print(
+        train_structured_verdict_model_from_files(
+            self_features_path=self_features_path or root / "self_review_features.jsonl",
+            external_features_path=ext_path,
+            output_dir=output_dir,
+            n_folds=n_folds,
+        )
+    )
 
 
 @app.command("score-paper")
